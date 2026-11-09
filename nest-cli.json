@@ -4,6 +4,6 @@
     "sourceRoot": "src",
     "compilerOptions": {
         "deleteOutDir": true,
-        "assets": ["resumes/editor/*"]
+        "assets": ["resumes/editor/index.html", "resumes/editor/editor.js", "resumes/editor/editor.generated.css"]
     }
 }

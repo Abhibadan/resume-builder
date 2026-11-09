@@ -3,9 +3,9 @@ import type { Resume } from './resume.schema.js';
 type Typography = Resume['rendering']['typography'];
 type TextStyle = Typography[Exclude<keyof Typography, 'unit'>];
 
-function textStyle(style: TextStyle): string {
+function textStyle(style: TextStyle, fontSize: number = style.fontSize): string {
     return [
-        `font-size: ${style.fontSize}pt;`,
+        `font-size: ${fontSize}pt;`,
         `font-weight: ${style.fontWeight};`,
         'fontStyle' in style ? `font-style: ${style.fontStyle};` : '',
         'colorToken' in style ? 'color: var(--primary);' : '',
@@ -32,8 +32,9 @@ body {
   background: ${colors.background};
   color: ${colors.body};
   font-family: "${fonts.body}", "Liberation Sans", sans-serif;
-  ${textStyle(typography.body)}
-  line-height: 1.13;
+  ${textStyle(typography.body, layout.bodyFontSizePt)}
+  line-height: ${layout.lineHeight};
+  letter-spacing: ${layout.letterSpacingPt}pt;
   overflow-wrap: anywhere;
 }
 h1, h2, h3, p, ul { margin: 0; }
@@ -66,8 +67,16 @@ h3 { font-family: var(--heading-font); ${textStyle(typography.entryTitle)} }
 .date { ${textStyle(typography.date)} }
 .education .date { ${textStyle(typography.educationDate)} }
 .date { white-space: pre-wrap; }
-ul { padding-inline-start: 12pt; ${textStyle(typography.bullets)} }
-.skill, .skill_groups ul { ${textStyle(typography.skills)} }
+ul { padding-inline-start: 12pt; ${textStyle(typography.bullets, layout.bodyFontSizePt)} }
+.skill, .skill_groups ul { ${textStyle(typography.skills, layout.bodyFontSizePt)} }
+.skill_groups ul[data-columns] {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 12pt;
+}
+.skill_groups ul[data-columns="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.skill_groups ul[data-columns="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.skill_groups li { break-inside: avoid; }
 a { color: inherit; text-decoration: underline; }
 `;
 }

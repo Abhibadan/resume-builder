@@ -149,8 +149,9 @@ Hidden sections still follow the same validation rules.
 
 Skills sections (`type: "skill_groups"`) accept an optional `style`.
 Use `"grouped"` (the default) for labeled rows or `"bullets"` for one
-bullet per skill value, in the original order. Both styles use the same
-`items` shape, so switching styles only requires changing `style`.
+bullet per skill value, in the original order. Simple bullets fill each row
+left to right and accept `columns` of 2, 3 (default), or 4. Each item has
+`values`. A `label` is required for Grouped rows and optional for Simple bullets.
 
 ```json
 {
@@ -159,7 +160,8 @@ bullet per skill value, in the original order. Both styles use the same
   "type": "skill_groups",
   "visible": true,
   "style": "bullets",
-  "items": [{ "label": "Languages", "values": ["TypeScript", "SQL"] }]
+  "columns": 3,
+  "items": [{ "values": ["TypeScript", "SQL"] }]
 }
 ```
 
@@ -180,9 +182,13 @@ that defaults to `true`. Set it to `false` to hide that contact link's label
 and PDF annotation. LinkedIn, GitHub, and Portfolio can be toggled independently.
 
 Omit `rendering` to use the `classic-ats` defaults. The classic template
-fixes A4 portrait geometry, the 9/14/8/14 mm margins, and the point sizes
-shown in the fixture. Rendering options support six-digit hex colors,
-allowlisted system fonts, and compact or relaxed spacing. Fonts fall back
+uses A4 portrait geometry, 9/14/8/14 mm margins, and the default point sizes
+shown in the fixture. **Resume settings → Appearance** lets users change body
+font size (8–12 pt), line spacing (1.05–1.60×), and letter spacing
+(−0.20–0.80 pt). These settings are saved under `rendering.layout` as
+`bodyFontSizePt`, `lineHeight`, and `letterSpacingPt`. Body font size also
+applies to bullets and skills. Other appearance options include six-digit hex
+colors, allowlisted system fonts, and compact or relaxed section spacing. Fonts fall back
 to Liberation Sans and the system sans-serif font. Links accept HTTP,
 HTTPS, mailto, and tel URLs. The renderer blocks external resources.
 
@@ -210,12 +216,17 @@ student resume, and an experienced professional resume.
 
 ## Student resume editor
 
-Start the application and open `http://localhost:3000/resumes/editor`. The editor
+Start the application and open `http://localhost:3000/resumes/editor`. Use the
+section navigator to switch between compact form panels. On smaller screens,
+the **Preview** and **Back to editor** links move between the two panes. The editor
 has separate fields for profile and contact, summary, skills, experience,
 projects, education, certifications, and achievements. Add or remove entries,
 toggle section and contact-link visibility, choose a skills style, and add or
 hide education scores. Import accepts a plain resume fixture or a JSON export
 from the editor. The editor starts a blank student resume.
+
+The start, build, and end-to-end test scripts compile the editor stylesheet
+locally with Tailwind CSS. Run `pnpm editor:css` to rebuild it on demand.
 
 Changes trigger a debounced A4 preview. The page indicator reports the actual
 PDF page count and the configured limit. Expand **Excluded content** to see

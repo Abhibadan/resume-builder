@@ -1,7 +1,9 @@
 const root = document.querySelector('#fields');
+const sectionNav = document.querySelector('#section-nav');
 const preview = document.querySelector('#preview');
 const fit = document.querySelector('#fit');
 const status = document.querySelector('#status');
+const warning = document.querySelector('#validation-warning');
 const pdfButton = document.querySelector('#download-pdf');
 const printButton = document.querySelector('#print');
 
@@ -69,6 +71,8 @@ let previewUrl;
 let timer;
 let revision = 0;
 let inFlight = false;
+let activePanel = 'profile';
+const fieldControls = new WeakMap();
 
 function node(tag, text, className) {
     const element = document.createElement(tag);
@@ -77,15 +81,15 @@ function node(tag, text, className) {
     return element;
 }
 
-function button(label, action) {
-    const element = node('button', label);
+function button(label, action, className = 'ui-button') {
+    const element = node('button', label, className);
     element.type = 'button';
     element.addEventListener('click', action);
     return element;
 }
 
 function field(label, value, change, type = 'text') {
-    const wrapper = node('label', label, type === 'checkbox' ? 'check' : undefined);
+    const wrapper = node('label', label, type === 'checkbox' ? 'form-check' : 'form-field');
     const input = node(['lines', 'textarea'].includes(type) ? 'textarea' : 'input');
     if (input instanceof HTMLInputElement) input.type = type;
     if (type === 'checkbox') input.checked = value;
@@ -108,7 +112,7 @@ function field(label, value, change, type = 'text') {
 }
 
 function property(object, key, label, type, fallback) {
-    return field(
+    const wrapper = field(
         label,
         object[key] ?? fallback,
         (value) => {
@@ -117,10 +121,13 @@ function property(object, key, label, type, fallback) {
         },
         type,
     );
+    if (!fieldControls.has(object)) fieldControls.set(object, new Map());
+    fieldControls.get(object).set(key, { label, input: wrapper.lastElementChild });
+    return wrapper;
 }
 
 function select(label, choices, value, change) {
-    const wrapper = node('label', label);
+    const wrapper = node('label', label, 'form-field');
     const input = node('select');
     for (const [id, name] of choices) {
         const option = node('option', name);
@@ -136,14 +143,20 @@ function select(label, choices, value, change) {
     return wrapper;
 }
 
+function numberSetting(object, key, label, fallback, min, max, step) {
+    const wrapper = property(object, key, label, 'number', fallback);
+    Object.assign(wrapper.lastElementChild, { min, max, step });
+    return wrapper;
+}
+
 function group(title) {
-    const element = node('fieldset');
+    const element = node('fieldset', undefined, 'editor-panel');
     element.append(node('legend', title));
     return element;
 }
 
 function grid(...children) {
-    const element = node('div', undefined, 'grid');
+    const element = node('div', undefined, 'form-grid');
     element.append(...children);
     return element;
 }
@@ -159,21 +172,24 @@ function redraw(action) {
 function linksEditor(owner, contact) {
     owner.links ??= [];
     const heading = contact ? 'Contact links' : 'Project links';
-    const box = node('div');
-    box.append(node('h3', heading));
+    const box = node('div', undefined, 'space-y-2 border-t border-slate-200 pt-3');
+    box.append(node('h3', heading, 'text-xs font-semibold text-slate-800'));
     owner.links.forEach((link, index) => {
-        const row = node('div', undefined, 'entry');
+        const row = node('div', undefined, 'form-entry');
         row.append(grid(property(link, 'label', 'Link label'), property(link, 'url', 'Link URL', 'url')));
-        if (contact) row.append(property(link, 'visible', 'Show link', 'checkbox', true));
-        row.append(
+        const actions = node('div', undefined, 'flex flex-wrap items-center justify-between gap-1.5');
+        if (contact) actions.append(property(link, 'visible', 'Show link', 'checkbox', true));
+        actions.append(
             button(
                 'Remove link',
                 redraw(() => owner.links.splice(index, 1)),
+                'ui-button ui-button-quiet ml-auto',
             ),
         );
+        row.append(actions);
         box.append(row);
     });
-    const actions = node('div', undefined, 'actions');
+    const actions = node('div', undefined, 'flex flex-wrap items-center gap-1.5');
     if (contact) {
         for (const [type, label] of [
             ['linkedin', 'LinkedIn'],
@@ -266,7 +282,7 @@ function layoutEditor() {
             ),
         ),
     );
-    const appearance = node('details');
+    const appearance = node('details', undefined, 'form-details');
     appearance.append(node('summary', 'Appearance'));
     const rendering = (resume.rendering ??= {});
     const colors = (rendering.colors ??= {});
@@ -275,6 +291,9 @@ function layoutEditor() {
         grid(
             property(colors, 'primary', 'Accent color', 'color', '#1F3A68'),
             property(colors, 'body', 'Text color', 'color', '#202020'),
+            numberSetting(spacing, 'bodyFontSizePt', 'Body font size (pt)', 9.2, 8, 12, 0.1),
+            numberSetting(spacing, 'lineHeight', 'Line spacing (×)', 1.13, 1.05, 1.6, 0.01),
+            numberSetting(spacing, 'letterSpacingPt', 'Letter spacing (pt)', 0, -0.2, 0.8, 0.05),
             property(spacing, 'compactSpacing', 'Compact spacing', 'checkbox', true),
         ),
     );
@@ -289,6 +308,21 @@ function sectionEditor(section, sectionIndex) {
         property(section, 'visible', 'Show section', 'checkbox', true),
     );
     if (section.type === 'skill_groups') {
+        box.classList.add('group/skills');
+        box.dataset.skillsStyle = section.style ?? 'grouped';
+        const columns = select(
+            'Bullet columns',
+            [
+                ['2', '2 columns'],
+                ['3', '3 columns'],
+                ['4', '4 columns'],
+            ],
+            String(section.columns ?? 3),
+            (value) => {
+                section.columns = Number(value);
+            },
+        );
+        columns.hidden = section.style !== 'bullets';
         controls.append(
             select(
                 'Skills style',
@@ -299,12 +333,15 @@ function sectionEditor(section, sectionIndex) {
                 section.style ?? 'grouped',
                 (style) => {
                     section.style = style;
+                    box.dataset.skillsStyle = style;
+                    columns.hidden = style !== 'bullets';
                 },
             ),
+            columns,
         );
     }
     box.append(controls);
-    const rules = node('details');
+    const rules = node('details', undefined, 'form-details');
     rules.append(node('summary', 'Fit settings'));
     const rule = ((layout.sections ??= {})[section.type] ??= {});
     const settings = grid(
@@ -335,18 +372,19 @@ function sectionEditor(section, sectionIndex) {
             button(
                 'Add entry',
                 redraw(() => {
-                    const required = itemFields[section.type]?.[0]?.[0];
-                    section.items.push(section.type === 'bullet_list' ? '' : { [required]: '' });
-                    if (section.type === 'skill_groups') section.items.at(-1).values = [];
+                    if (section.type === 'bullet_list') section.items.push('');
+                    else if (section.type === 'skill_groups') section.items.push({ values: [] });
+                    else section.items.push({ [itemFields[section.type][0][0]]: '' });
                 }),
             ),
         );
     }
-    const actions = node('div', undefined, 'actions');
+    const actions = node('div', undefined, 'flex flex-wrap items-center gap-1.5');
     actions.append(
         button(
             'Remove section',
             redraw(() => resume.sections.splice(sectionIndex, 1)),
+            'ui-button ui-button-quiet',
         ),
     );
     box.append(actions);
@@ -354,10 +392,10 @@ function sectionEditor(section, sectionIndex) {
 }
 
 function itemEditor(section, item, index) {
-    const box = node('article', undefined, 'entry');
-    const heading = node('div', undefined, 'row-heading');
+    const box = node('article', undefined, 'form-entry');
+    const heading = node('div', undefined, 'flex flex-wrap items-center justify-between gap-1.5');
     heading.append(
-        node('h3', `Entry ${index + 1}`),
+        node('h3', `Entry ${index + 1}`, 'text-xs font-semibold text-slate-800'),
         button(
             'Remove entry',
             redraw(() => {
@@ -366,6 +404,7 @@ function itemEditor(section, item, index) {
                     .filter((protectedIndex) => protectedIndex !== index)
                     .map((protectedIndex) => (protectedIndex > index ? protectedIndex - 1 : protectedIndex));
             }),
+            'ui-button ui-button-quiet',
         ),
     );
     box.append(heading);
@@ -380,7 +419,14 @@ function itemEditor(section, item, index) {
                 'textarea',
             ),
         );
-    else box.append(grid(...itemFields[section.type].map(([key, label, type]) => property(item, key, label, type))));
+    else {
+        const fields = itemFields[section.type].map(([key, label, type]) => property(item, key, label, type));
+        if (section.type === 'skill_groups') {
+            fields[0].classList.add('group-data-[skills-style=bullets]/skills:hidden');
+            fields[1].classList.add('group-data-[skills-style=bullets]/skills:col-span-full');
+        }
+        box.append(grid(...fields));
+    }
     box.append(
         field(
             'Protect entry from reduction',
@@ -440,18 +486,64 @@ function renderEditor() {
                 redraw(() => {
                     let suffix = 1;
                     while (resume.sections.some(({ id }) => id === `${nextType}-${suffix}`)) suffix++;
-                    resume.sections.push({
+                    const section = {
                         type: nextType,
                         id: `${nextType}-${suffix}`,
                         title: sectionLabels[nextType],
                         visible: true,
                         ...(nextType === 'summary' ? { content: '' } : { items: [] }),
-                    });
+                    };
+                    resume.sections.push(section);
+                    activePanel = section;
                 }),
             ),
         ),
     );
-    root.replaceChildren(profileEditor(), layoutEditor(), ...resume.sections.map(sectionEditor), add);
+    const sectionCounts = new Map();
+    const panels = [
+        { key: 'profile', label: 'Profile & contact', content: profileEditor() },
+        ...resume.sections.map((section, index) => {
+            const count = (sectionCounts.get(section.type) ?? 0) + 1;
+            sectionCounts.set(section.type, count);
+            const label =
+                { summary: 'Summary', bullet_list: 'Achievements' }[section.type] ?? sectionLabels[section.type];
+            return {
+                key: section,
+                label: count === 1 ? label : `${label} ${count}`,
+                content: sectionEditor(section, index),
+            };
+        }),
+        { key: 'settings', label: 'Resume settings', content: layoutEditor() },
+        { key: 'add', label: '+ Add section', content: add },
+    ];
+    if (!panels.some(({ key }) => key === activePanel)) activePanel = 'profile';
+
+    for (const [index, panel] of panels.entries()) {
+        panel.content.id = `editor-panel-${index}`;
+        panel.control = button(
+            panel.label,
+            () => {
+                activePanel = panel.key;
+                updateSelection();
+            },
+            'editor-nav-button',
+        );
+        panel.control.setAttribute('aria-controls', panel.content.id);
+    }
+
+    function updateSelection() {
+        for (const panel of panels) {
+            const selected = panel.key === activePanel;
+            panel.content.hidden = !selected;
+            panel.control.setAttribute('aria-pressed', String(selected));
+        }
+    }
+
+    updateSelection();
+    const scrollPosition = sectionNav.scrollLeft;
+    sectionNav.replaceChildren(...panels.map(({ control }) => control));
+    sectionNav.scrollLeft = scrollPosition;
+    root.replaceChildren(...panels.map(({ content }) => content));
 }
 
 function payload() {
@@ -480,8 +572,9 @@ async function api(path, data) {
     );
     if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        const details = error.issues?.map(({ path, message }) => `${path}: ${message}`).join(' · ');
-        throw new Error(details || error.message || `Request failed (${response.status})`);
+        throw Object.assign(new Error(error.message || `Request failed (${response.status})`), {
+            issues: error.issues,
+        });
     }
     return response;
 }
@@ -491,11 +584,71 @@ function setBadge(label, state) {
     fit.dataset.state = state;
 }
 
+function describeIssue(path, data) {
+    const keys = path.split('.');
+    const section = keys[1] === 'sections' ? data?.resume.sections[keys[2]] : undefined;
+    let owner = data;
+    let control;
+    for (const key of keys) {
+        control = fieldControls.get(owner)?.get(key) ?? control;
+        owner = owner?.[key];
+    }
+    const fieldName =
+        control?.label.replace(/ \(e\.g\. .*\)$/, '') ??
+        keys
+            .filter((key) => /[a-z]/i.test(key))
+            .at(-1)
+            ?.replace(/([a-z])([A-Z])/g, '$1 $2');
+    const entry = keys[3] === 'items' && /^\d+$/.test(keys[4]) ? `Entry ${Number(keys[4]) + 1}` : '';
+    return {
+        input: control?.input,
+        label: [section && sectionLabels[section.type], entry, fieldName].filter(Boolean).join(' / '),
+    };
+}
+
+function showWarning(error, data, isPreview = false) {
+    const issues = error.issues ?? [];
+    document.querySelector('#warning-title').textContent = issues.length
+        ? issues.length === 1
+            ? 'Fix 1 field'
+            : `Fix ${issues.length} fields`
+        : error.message;
+    const note = document.querySelector('#warning-note');
+    note.textContent = preview.hidden
+        ? 'Update the fields below to continue.'
+        : 'The preview still shows the last successful version.';
+    note.hidden = !isPreview || (preview.hidden && issues.length === 0);
+    document.querySelector('#warning-items').replaceChildren(
+        ...issues.map(({ path, message }) => {
+            const { label, input } = describeIssue(path, data);
+            const row = node('li', undefined, 'flex flex-wrap items-center justify-between gap-2 px-2.5 py-2');
+            const detail = node('div', undefined, 'min-w-0 flex-1 basis-40 text-xs break-words');
+            if (label) detail.append(node('p', label, 'mb-0.5 font-semibold'));
+            detail.append(node('p', message, 'text-slate-700'));
+            row.append(detail);
+            if (input) {
+                row.append(
+                    button('Edit field', () => {
+                        const panelId = input.closest('.editor-panel')?.id;
+                        sectionNav.querySelector(`[aria-controls="${panelId}"]`)?.click();
+                        input.focus();
+                    }),
+                );
+            }
+            return row;
+        }),
+    );
+    status.hidden = true;
+    warning.hidden = false;
+}
+
 function queuePreview() {
     revision++;
     clearTimeout(timer);
     pdfButton.disabled = true;
     printButton.disabled = true;
+    warning.hidden = true;
+    status.hidden = false;
     document.querySelector('#report').hidden = true;
     if (!resume.profile.fullName?.trim()) {
         setBadge('Waiting for details', '');
@@ -513,8 +666,9 @@ async function updatePreview() {
     if (inFlight) return;
     inFlight = true;
     const current = revision;
+    const data = payload();
     try {
-        const response = await api('preview', payload());
+        const response = await api('preview', data);
         const { pdf, report } = await response.json();
         if (revision !== current) return;
         const bytes = Uint8Array.from(atob(pdf), (character) => character.charCodeAt(0));
@@ -526,7 +680,7 @@ async function updatePreview() {
         showReport(report);
     } catch (error) {
         if (revision === current) {
-            status.textContent = error.message;
+            showWarning(error, data, true);
             setBadge('Needs attention', 'overflow');
         }
     } finally {
@@ -572,13 +726,14 @@ function download(url, filename) {
 pdfButton.addEventListener('click', () => download(previewUrl, 'resume.pdf'));
 printButton.addEventListener('click', () => window.open(previewUrl, '_blank', 'noopener'));
 document.querySelector('#download-json').addEventListener('click', async () => {
+    const data = payload();
     try {
-        const response = await api('export/json', payload());
+        const response = await api('export/json', data);
         const url = URL.createObjectURL(await response.blob());
         download(url, 'resume.json');
         setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (error) {
-        status.textContent = error.message;
+        showWarning(error, data);
     }
 });
 document.querySelector('#import').addEventListener('change', async (event) => {
@@ -590,10 +745,11 @@ document.querySelector('#import').addEventListener('change', async (event) => {
         const parsed = JSON.parse(await file.text());
         const response = await api('export/json', parsed?.resume ? parsed : { resume: parsed });
         ({ resume, template, layout = {} } = await response.json());
+        activePanel = 'profile';
         renderEditor();
         queuePreview();
     } catch (error) {
-        status.textContent = error.message;
+        showWarning(error);
     } finally {
         input.value = '';
     }
@@ -607,5 +763,5 @@ api('templates')
         renderEditor();
     })
     .catch((error) => {
-        status.textContent = error.message;
+        showWarning(error);
     });

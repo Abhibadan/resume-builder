@@ -18,9 +18,9 @@ function anchor({ label, url }: { label: string; url: string }): string {
     return `<a href="${escapeHtml(url)}">${escapeHtml(label)}</a>`;
 }
 
-function bulletList(items: string[] = []): string {
+function bulletList(items: string[] = [], columns?: 2 | 3 | 4): string {
     if (items.length === 0) return '';
-    return `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
+    return `<ul${columns ? ` data-columns="${columns}"` : ''}>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
 }
 
 function entryRow(title: string, date?: string | null): string {
@@ -73,12 +73,15 @@ ${profile.headline ? `<p class="headline">${escapeHtml(profile.headline)}</p>` :
                 return `<p>${escapeHtml(section.content)}</p>`;
             case 'skill_groups':
                 if (section.style === 'bullets') {
-                    return bulletList(section.items.flatMap((group) => group.values));
+                    return bulletList(
+                        section.items.flatMap((group) => group.values),
+                        section.columns,
+                    );
                 }
                 return section.items
                     .map(
                         ({ label, values }) =>
-                            `<p class="skill"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(values.join(', '))}</p>`,
+                            `<p class="skill"><strong>${escapeHtml(label ?? '')}:</strong> ${escapeHtml(values.join(', '))}</p>`,
                     )
                     .join('');
             case 'experience':

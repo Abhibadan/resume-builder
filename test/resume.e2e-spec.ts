@@ -137,6 +137,64 @@ describe('POST /resumes/render', () => {
         }
     }, 25_000);
 
+    it('applies the body font size and line spacing to the generated PDF', async () => {
+        const loading = await render({
+            schemaVersion: '1.0.0',
+            profile: { fullName: 'Example' },
+            sections: [{ id: 'summary', title: 'Summary', type: 'summary', content: 'First line\nSecond line' }],
+            rendering: { layout: { bodyFontSizePt: 10.5, lineHeight: 1.4, letterSpacingPt: 0.25 } },
+        });
+        try {
+            const pdf = await loading.promise;
+            const { items } = await (await pdf.getPage(1)).getTextContent();
+            const lines = items
+                .filter((item) => 'str' in item)
+                .filter((item) => ['First line', 'Second line'].includes(item.str));
+            expect(lines).toHaveLength(2);
+            for (const line of lines) expect(line.transform[0]).toBeCloseTo(10.5, 1);
+            expect(Math.abs(lines[0].transform[5] - lines[1].transform[5] - 14.7)).toBeLessThan(1);
+        } finally {
+            await loading.destroy();
+        }
+    });
+
+    it.each([undefined, 2, 3, 4])('fills skills left to right with columns set to %s', async (columns) => {
+        const count = columns ?? 3;
+        const labels = ['Alpha skill', 'Beta skill', 'Gamma skill', 'Delta skill', 'Epsilon skill'];
+        const loading = await render({
+            schemaVersion: '1.0.0',
+            profile: { fullName: 'Example' },
+            sections: [
+                {
+                    id: 'skills',
+                    type: 'skill_groups',
+                    title: 'Skills',
+                    style: 'bullets',
+                    columns,
+                    items: [{ values: labels }],
+                },
+            ],
+        });
+        try {
+            const pdf = await loading.promise;
+            const { items } = await (await pdf.getPage(1)).getTextContent();
+            const positions = labels.map((label) => {
+                const item = items.find((entry) => 'str' in entry && entry.str === label);
+                if (!item || !('transform' in item)) throw new Error(`Missing PDF text: ${label}`);
+                return { x: item.transform[4], y: item.transform[5] };
+            });
+            const firstRow = positions.slice(0, count);
+            firstRow.forEach((item, index) => {
+                expect(item.y).toBeCloseTo(firstRow[0].y);
+                if (index > 0) expect(item.x).toBeGreaterThan(firstRow[index - 1].x);
+            });
+            expect(positions[count].y).toBeLessThan(firstRow[0].y);
+            expect(positions[count].x).toBeCloseTo(firstRow[0].x);
+        } finally {
+            await loading.destroy();
+        }
+    });
+
     it.each(['student_fresher_resume', 'experienced_professional_resume'])('renders the %s fixture', async (name) => {
         const resume = fixture(name);
         const loading = await render(resume);

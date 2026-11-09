@@ -19,7 +19,7 @@ export class ResumeEditorController {
 
     @Get('editor.css')
     styles(): Promise<StreamableFile> {
-        return this.asset('editor.css', 'text/css; charset=utf-8');
+        return this.asset('editor.generated.css', 'text/css; charset=utf-8');
     }
 
     private async asset(name: string, type: string): Promise<StreamableFile> {

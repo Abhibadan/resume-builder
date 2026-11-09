@@ -35,7 +35,9 @@ describe('resume validation and classic ATS template', () => {
             ],
         });
         const html = new ClassicAtsTemplate().render(resume);
-        expect(html).toContain('<ul><li>TypeScript</li><li>SQL</li><li>Research &amp; development</li></ul>');
+        expect(html).toContain(
+            '<ul data-columns="3"><li>TypeScript</li><li>SQL</li><li>Research &amp; development</li></ul>',
+        );
         expect(html).not.toContain('Languages');
         expect(html).not.toContain('Practices');
     });
@@ -117,6 +119,10 @@ describe('resume validation and classic ATS template', () => {
                 ],
             },
             { ...input, rendering: { fonts: { body: 'Arial"; } </style>' } } },
+            {
+                ...input,
+                sections: [{ id: 'skills', title: 'Skills', type: 'skill_groups', items: [{ values: ['SQL'] }] }],
+            },
             { ...input, rendering: { colors: { body: '#000; background:url(x)' } } },
             {
                 ...input,

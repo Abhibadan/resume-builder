@@ -31,12 +31,25 @@ const entryDate = { dateDisplay: metadata };
 
 const sectionSchema = z.discriminatedUnion('type', [
     z.strictObject({ ...section, type: z.literal('summary'), content: prose }),
-    z.strictObject({
-        ...itemSection,
-        type: z.literal('skill_groups'),
-        style: z.enum(['grouped', 'bullets']).default('grouped'),
-        items: z.array(z.strictObject({ label: text, values })).max(100),
-    }),
+    z
+        .strictObject({
+            ...itemSection,
+            type: z.literal('skill_groups'),
+            style: z.enum(['grouped', 'bullets']).default('grouped'),
+            columns: z.literal([2, 3, 4]).default(3),
+            items: z.array(z.strictObject({ label: text.optional(), values })).max(100),
+        })
+        .superRefine(({ style, items }, context) => {
+            if (style !== 'grouped') return;
+            items.forEach(({ label }, index) => {
+                if (label !== undefined) return;
+                context.addIssue({
+                    code: 'custom',
+                    path: ['items', index, 'label'],
+                    message: 'Enter a group label for Grouped rows',
+                });
+            });
+        }),
     z.strictObject({
         ...itemSection,
         type: z.literal('experience'),
@@ -160,6 +173,9 @@ const layout = z.strictObject({
     rightAlignDates: z.literal(true).default(true),
     linksUnderlined: z.literal(true).default(true),
     compactSpacing: z.boolean().default(true),
+    bodyFontSizePt: z.number().min(8).max(12).optional(),
+    lineHeight: z.number().min(1.05).max(1.6).default(1.13),
+    letterSpacingPt: z.number().min(-0.2).max(0.8).default(0),
     keepEntryHeadingWithContent: z.literal(true).default(true),
     allowAdditionalPages: z.literal(true).default(true),
 });

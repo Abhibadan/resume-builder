@@ -208,6 +208,6 @@ export class ResumeLayoutService {
         if ('role' in item) return item.role;
         if ('qualification' in item) return item.qualification;
         if ('name' in item) return item.name;
-        return item.label;
+        return item.label ?? item.values[0]?.slice(0, 120) ?? 'Skills';
     }
 }
