@@ -112,3 +112,98 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Resume PDF API
+
+Install Playwright's Chromium on the host before running the service or the
+end-to-end tests. On supported Linux distributions, the combined command also
+installs the required system libraries and fonts. [Playwright browser setup](https://playwright.dev/docs/browsers#install-system-dependencies)
+
+```bash
+pnpm install
+pnpm exec playwright install --with-deps chromium
+pnpm start
+```
+
+Set `RESUME_CHROMIUM_EXECUTABLE_PATH` to an absolute executable path to use a
+locally installed Chrome or Chromium. For a Linux deployment image, install the
+matching browser and OS dependencies during the image build. If using a shared
+browser directory, set `PLAYWRIGHT_BROWSERS_PATH` to the same directory at build
+time and runtime. Run the service as a non-root user with a container seccomp
+profile that permits Chromium's user namespaces. The renderer starts Chromium
+with sandboxing enabled. [Playwright Docker setup](https://playwright.dev/docs/docker#run-the-image)
+
+### `POST /resumes/render`
+
+Send an uncompressed `application/json` request up to 100 KiB. The request
+requires `schemaVersion: "1.0.0"`, `profile.fullName`, and an ordered
+`sections` array. Each section requires an `id`, `title`, and a supported
+`type`. Use `content` for `summary` and `items` for `skill_groups`,
+`experience`, `projects`, `education`, `certifications`, and `bullet_list`.
+See [the full fixture](docs/resume_full.json) for each item shape and the
+[validation schema](src/resumes/resume.schema.ts) for field limits.
+
+Each section accepts an optional boolean `visible`. It defaults to `true`.
+Set it to `false` to omit the heading, content, and links from the PDF.
+Hidden sections still follow the same validation rules.
+
+Skills sections (`type: "skill_groups"`) accept an optional `style`.
+Use `"grouped"` (the default) for labeled rows or `"bullets"` for one
+bullet per skill value, in the original order. Both styles use the same
+`items` shape, so switching styles only requires changing `style`.
+
+```json
+{
+  "id": "skills",
+  "title": "Skills",
+  "type": "skill_groups",
+  "visible": true,
+  "style": "bullets",
+  "items": [{ "label": "Languages", "values": ["TypeScript", "SQL"] }]
+}
+```
+
+An education item's `score` is optional and can be omitted or set to `null`.
+To keep the score in the JSON and hide its line in the PDF, use
+`"score": { "label": "CGPA", "value": "8.4/10", "visible": false }`.
+When provided, a score is visible by default.
+
+Optional `document` fields describe the source. Only its language affects
+output. Dates use `dateDisplay` as supplied. For certifications, use an
+abbreviated month and four-digit year such as `Jan 2026`. Older certification
+entries with only `year` display that year. The sample fixtures use January
+as a placeholder where the source provided only a year. Education dates are
+bold and upright. Phone and email are text. Links supplied explicitly in the contact,
+project, and certification fields become PDF annotations.
+Each item in `profile.contact.links` accepts an optional boolean `visible`
+that defaults to `true`. Set it to `false` to hide that contact link's label
+and PDF annotation. LinkedIn, GitHub, and Portfolio can be toggled independently.
+
+Omit `rendering` to use the `classic-ats` defaults. The classic template
+fixes A4 portrait geometry, the 9/14/8/14 mm margins, and the point sizes
+shown in the fixture. Rendering options support six-digit hex colors,
+allowlisted system fonts, and compact or relaxed spacing. Fonts fall back
+to Liberation Sans and the system sans-serif font. Links accept HTTP,
+HTTPS, mailto, and tel URLs. The renderer blocks external resources.
+
+| Status | Response |
+| --- | --- |
+| 200 | Raw tagged PDF, `Content-Type: application/pdf`, `Content-Disposition: attachment; filename="resume.pdf"` |
+| 400 | Invalid JSON or resume fields. Schema errors include paths and messages. |
+| 413 | Request exceeds 100 KiB. |
+| 415 | Unsupported content type or request encoding. |
+| 500 | PDF generation failed. |
+| 503 | Both render slots are busy. Retry shortly. |
+| 504 | Rendering exceeded the 15-second deadline. |
+
+```bash
+curl --fail-with-body \
+  -H 'Content-Type: application/json' \
+  --data-binary @docs/resume_full.json \
+  http://localhost:3000/resumes/render \
+  --output resume.pdf
+```
+
+Run `pnpm test` for validation and HTML checks and `pnpm test:e2e` for the
+HTTP, PDF, and overflow checks. The fixtures include the full resume, a
+student resume, and an experienced professional resume.

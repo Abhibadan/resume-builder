@@ -1,0 +1,371 @@
+{
+    "schemaVersion": "1.0.0",
+    "document": {
+        "type": "resume",
+        "language": "en-IN",
+        "sourceFilename": "Sample_Resume.pdf",
+        "pageSize": "A4",
+        "sourcePageCount": 1
+    },
+    "profile": {
+        "fullName": "Aarav Sharma",
+        "headline": "Data Analyst",
+        "contact": {
+            "phone": "+91 98765 43210",
+            "email": "aarav.sharma@email.com",
+            "location": {
+                "display": "Bengaluru, Karnataka",
+                "city": "Bengaluru",
+                "state": "Karnataka",
+                "country": null
+            },
+            "links": [
+                {
+                    "label": "LinkedIn",
+                    "url": "https://www.linkedin.com/in/aarav-sharma",
+                    "type": "linkedin"
+                },
+                {
+                    "label": "GitHub",
+                    "url": "https://github.com/aarav-sharma",
+                    "type": "github"
+                },
+                {
+                    "label": "Portfolio",
+                    "url": "https://aaravsharma.github.io",
+                    "type": "portfolio"
+                }
+            ]
+        }
+    },
+    "sections": [
+        {
+            "id": "summary",
+            "type": "summary",
+            "title": "PROFESSIONAL SUMMARY",
+            "content": "Detail-oriented Data Analyst with a B.Sc. in Statistics and hands-on experience in SQL, Python, Excel, and Power BI. Completed a data analytics internship cleaning, analysing, and visualising sales data to support business decisions. Skilled at turning raw data into clear dashboards and actionable insights. Seeking an entry-level Data Analyst role to apply analytical and problem-solving skills in a data-driven organisation."
+        },
+        {
+            "id": "skills",
+            "type": "skill_groups",
+            "title": "SKILLS",
+            "items": [
+                {
+                    "label": "Programming & Querying",
+                    "values": [
+                        "SQL (MySQL, PostgreSQL)",
+                        "Python (Pandas, NumPy, Matplotlib, Seaborn)"
+                    ]
+                },
+                {
+                    "label": "Data Visualization",
+                    "values": [
+                        "Power BI",
+                        "Tableau",
+                        "Microsoft Excel (Pivot Tables, VLOOKUP/XLOOKUP, Charts)"
+                    ]
+                },
+                {
+                    "label": "Data Analysis",
+                    "values": [
+                        "Data Cleaning",
+                        "EDA",
+                        "Descriptive Statistics",
+                        "Hypothesis Testing",
+                        "A/B Testing"
+                    ]
+                },
+                {
+                    "label": "Tools",
+                    "values": [
+                        "Jupyter Notebook",
+                        "Git",
+                        "GitHub",
+                        "Google Sheets"
+                    ]
+                },
+                {
+                    "label": "Soft Skills",
+                    "values": [
+                        "Analytical Thinking",
+                        "Problem Solving",
+                        "Communication",
+                        "Attention to Detail",
+                        "Teamwork"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "experience",
+            "type": "experience",
+            "title": "INTERNSHIP EXPERIENCE",
+            "items": [
+                {
+                    "role": "Data Analyst Intern",
+                    "organization": "ABC Retail Solutions Pvt. Ltd.",
+                    "location": "Bengaluru",
+                    "dateDisplay": "Jan 2026 – Apr 2026",
+                    "startDate": "2026-01",
+                    "endDate": "2026-04",
+                    "bullets": [
+                        "Cleaned and transformed 50,000+ rows of sales data using Python (Pandas) and Excel, reducing data errors by 30%.",
+                        "Wrote SQL queries to extract and analyse monthly sales, customer, and product data.",
+                        "Built an interactive Power BI dashboard tracking revenue, top products, and regional performance for the sales team.",
+                        "Presented weekly insights to managers, helping identify 3 underperforming product categories."
+                    ]
+                },
+                {
+                    "role": "Business Analytics Intern",
+                    "organization": "XYZ Consulting",
+                    "location": "Remote",
+                    "dateDisplay": "Jun 2025 – Aug 2025",
+                    "startDate": "2025-06",
+                    "endDate": "2025-08",
+                    "bullets": [
+                        "Conducted exploratory data analysis on customer survey data of 2,000+ respondents.",
+                        "Created Excel reports with pivot tables and charts to summarise customer satisfaction trends.",
+                        "Documented data sources and analysis steps for the team's reporting process."
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "projects",
+            "type": "projects",
+            "title": "PROJECTS",
+            "items": [
+                {
+                    "name": "Customer Churn Analysis",
+                    "dateDisplay": "Mar 2026",
+                    "date": "2026-03",
+                    "links": [
+                        {
+                            "label": "GitHub",
+                            "url": "https://github.com/aarav-sharma/churn-analysis"
+                        }
+                    ],
+                    "bullets": [
+                        "Analysed a telecom dataset of 7,000+ customers to identify key drivers of churn.",
+                        "Found that month-to-month contracts and high monthly charges were linked to higher churn rates.",
+                        "Visualised findings and suggested retention strategies."
+                    ],
+                    "technologies": [
+                        "Python",
+                        "Pandas",
+                        "NumPy",
+                        "Matplotlib",
+                        "Seaborn",
+                        "Jupyter Notebook"
+                    ]
+                },
+                {
+                    "name": "E-Commerce Sales Dashboard",
+                    "dateDisplay": "Dec 2025",
+                    "date": "2025-12",
+                    "links": [
+                        {
+                            "label": "GitHub",
+                            "url": "https://github.com/aarav-sharma/ecommerce-dashboard"
+                        }
+                    ],
+                    "bullets": [
+                        "Built an interactive dashboard showing revenue, orders, profit, and category-wise sales trends.",
+                        "Used SQL to clean and join order, product, and customer tables.",
+                        "Added filters by region, date, and category for quick, self-service insights."
+                    ],
+                    "technologies": [
+                        "SQL (MySQL)",
+                        "Power BI",
+                        "Power Query",
+                        "DAX"
+                    ]
+                },
+                {
+                    "name": "HR Attrition Analysis",
+                    "dateDisplay": "Aug 2025",
+                    "date": "2025-08",
+                    "links": [],
+                    "bullets": [
+                        "Analysed employee data of 1,400+ records using pivot tables, XLOOKUP, and conditional formatting.",
+                        "Identified departments and age groups with the highest attrition and presented findings in an Excel dashboard."
+                    ],
+                    "technologies": [
+                        "Microsoft Excel (Pivot Tables, XLOOKUP, Conditional Formatting, Charts)"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "education",
+            "type": "education",
+            "title": "EDUCATION",
+            "items": [
+                {
+                    "qualification": "B.Sc. in Statistics",
+                    "institution": "Christ University",
+                    "location": "Bengaluru",
+                    "dateDisplay": "May 2026",
+                    "completionDate": "2026-05",
+                    "score": {
+                        "label": "CGPA",
+                        "value": "8.4/10"
+                    }
+                },
+                {
+                    "qualification": "Higher Secondary (Class XII), Science – Mathematics",
+                    "institution": "Delhi Public School",
+                    "location": "Bengaluru",
+                    "dateDisplay": "Mar 2023",
+                    "completionDate": "2023-03",
+                    "score": {
+                        "label": "Percentage",
+                        "value": "89%"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "certifications",
+            "type": "certifications",
+            "title": "CERTIFICATIONS",
+            "items": [
+                {
+                    "name": "Google Data Analytics Professional Certificate",
+                    "issuer": "Coursera",
+                    "durationDisplay": "6 months",
+                    "dateDisplay": "Jan 2025",
+                    "url": "https://www.coursera.org/professional-certificates/google-data-analytics"
+                },
+                {
+                    "name": "Microsoft Power BI Data Analyst (PL-300)",
+                    "issuer": "Microsoft",
+                    "durationDisplay": "2 months",
+                    "dateDisplay": "Jan 2026",
+                    "url": "https://learn.microsoft.com/en-us/credentials/certifications/data-analyst-associate/"
+                },
+                {
+                    "name": "SQL (Intermediate)",
+                    "issuer": "HackerRank",
+                    "durationDisplay": "1 month",
+                    "dateDisplay": "Jan 2025",
+                    "url": "https://www.hackerrank.com/skills-verification/sql_intermediate"
+                },
+                {
+                    "name": "Python for Data Science",
+                    "issuer": "IBM, Coursera",
+                    "durationDisplay": "1 month",
+                    "dateDisplay": "Jan 2025",
+                    "url": "https://www.coursera.org/learn/python-for-applied-data-science-ai"
+                }
+            ]
+        },
+        {
+            "id": "awards",
+            "type": "bullet_list",
+            "title": "AWARDS AND ACHIEVEMENTS",
+            "items": [
+                "Secured 2nd place in the Inter-College Data Analytics Hackathon, Christ University (2025).",
+                "5-star rating in SQL on HackerRank.",
+                "Department topper in Statistics, Semester 4 (2025)."
+            ]
+        }
+    ],
+    "rendering": {
+        "template": "classic-ats",
+        "page": {
+            "size": "A4",
+            "orientation": "portrait",
+            "marginMm": {
+                "top": 9,
+                "right": 14,
+                "bottom": 8,
+                "left": 14
+            }
+        },
+        "colors": {
+            "primary": "#1F3A68",
+            "body": "#202020",
+            "background": "#FFFFFF"
+        },
+        "fonts": {
+            "body": "Arial",
+            "heading": "Arial"
+        },
+        "layout": {
+            "headerAlignment": "center",
+            "sectionHeadingCase": "uppercase",
+            "sectionDivider": true,
+            "rightAlignDates": true,
+            "linksUnderlined": true,
+            "compactSpacing": true,
+            "keepEntryHeadingWithContent": true,
+            "allowAdditionalPages": true
+        },
+        "output": {
+            "format": "pdf",
+            "printBackground": true,
+            "preferCssPageSize": true,
+            "tagged": true
+        },
+        "typography": {
+            "unit": "pt",
+            "name": {
+                "fontSize": 22,
+                "fontWeight": 700,
+                "textTransform": "uppercase",
+                "textAlign": "center"
+            },
+            "headline": {
+                "fontSize": 11.5,
+                "fontWeight": 700,
+                "colorToken": "primary",
+                "textAlign": "center"
+            },
+            "contact": {
+                "fontSize": 9,
+                "fontWeight": 400,
+                "textAlign": "center"
+            },
+            "sectionHeading": {
+                "fontSize": 11,
+                "fontWeight": 700,
+                "colorToken": "primary",
+                "textTransform": "uppercase"
+            },
+            "entryTitle": {
+                "fontSize": 9.8,
+                "fontWeight": 700
+            },
+            "companyAndEducationScore": {
+                "fontSize": 9,
+                "fontWeight": 400,
+                "fontStyle": "italic",
+                "colorToken": "primary"
+            },
+            "date": {
+                "fontSize": 9.2,
+                "fontWeight": 700,
+                "textAlign": "right"
+            },
+            "educationDate": {
+                "fontSize": 9.2,
+                "fontWeight": 700,
+                "fontStyle": "normal",
+                "textAlign": "right"
+            },
+            "body": {
+                "fontSize": 9.2,
+                "fontWeight": 400
+            },
+            "bullets": {
+                "fontSize": 9.2,
+                "fontWeight": 400
+            },
+            "skills": {
+                "fontSize": 9.2,
+                "fontWeight": 400
+            }
+        }
+    }
+}

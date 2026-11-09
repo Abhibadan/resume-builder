@@ -1,0 +1,329 @@
+{
+  "schemaVersion": "1.0.0",
+  "document": {
+    "type": "resume",
+    "language": "en-IN",
+    "pageSize": "A4",
+    "contentVariant": "experienced-professional",
+    "sampleData": true
+  },
+  "profile": {
+    "fullName": "Rohan Kapoor",
+    "headline": "Senior Full Stack Software Engineer",
+    "contact": {
+      "phone": "+91 90000 00002",
+      "email": "rohan.kapoor@example.com",
+      "location": {
+        "display": "Hyderabad, Telangana",
+        "city": "Hyderabad",
+        "state": "Telangana",
+        "country": "India"
+      },
+      "links": [
+        {
+          "label": "LinkedIn",
+          "url": "https://example.com/rohan-linkedin",
+          "type": "linkedin"
+        },
+        {
+          "label": "GitHub",
+          "url": "https://example.com/rohan-github",
+          "type": "github"
+        },
+        {
+          "label": "Portfolio",
+          "url": "https://example.com/rohan-portfolio",
+          "type": "portfolio"
+        }
+      ]
+    }
+  },
+  "sections": [
+    {
+      "id": "summary",
+      "type": "summary",
+      "title": "PROFESSIONAL SUMMARY",
+      "content": "Full Stack Software Engineer with 5+ years of experience delivering SaaS products and internal business applications. Experienced in TypeScript, React, NestJS, PostgreSQL, and AWS, with a focus on API design, performance, test automation, and secure role-based access. Led small engineering initiatives, reviewed code, and collaborated with product teams to ship reliable features."
+    },
+    {
+      "id": "skills",
+      "type": "skill_groups",
+      "title": "TECHNICAL SKILLS",
+      "items": [
+        {
+          "label": "Languages",
+          "values": [
+            "TypeScript",
+            "JavaScript",
+            "SQL",
+            "Python"
+          ]
+        },
+        {
+          "label": "Frontend",
+          "values": [
+            "React",
+            "Next.js",
+            "Redux Toolkit",
+            "HTML",
+            "CSS"
+          ]
+        },
+        {
+          "label": "Backend",
+          "values": [
+            "NestJS",
+            "Node.js",
+            "Express",
+            "REST APIs",
+            "GraphQL",
+            "Microservices"
+          ]
+        },
+        {
+          "label": "Data & Infrastructure",
+          "values": [
+            "PostgreSQL",
+            "Redis",
+            "MongoDB",
+            "AWS (EC2, S3, RDS)",
+            "Docker",
+            "GitHub Actions"
+          ]
+        },
+        {
+          "label": "Engineering",
+          "values": [
+            "System Design",
+            "RBAC",
+            "Jest",
+            "Playwright",
+            "Code Review",
+            "CI/CD",
+            "Observability"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "experience",
+      "type": "experience",
+      "title": "PROFESSIONAL EXPERIENCE",
+      "items": [
+        {
+          "role": "Senior Software Engineer",
+          "organization": "Northstar Cloud Technologies Pvt. Ltd.",
+          "location": "Hyderabad",
+          "dateDisplay": "Jul 2023 – Present",
+          "startDate": "2023-07",
+          "endDate": null,
+          "bullets": [
+            "Led delivery of role-based administration features across NestJS APIs and React dashboards for a multi-tenant SaaS platform.",
+            "Reduced p95 response time of a frequently used reporting endpoint by 42% through query optimisation, indexing, and caching.",
+            "Introduced integration tests and CI quality checks that reduced regression issues in release testing.",
+            "Mentored three junior developers through code reviews, design discussions, and pairing sessions."
+          ]
+        },
+        {
+          "role": "Software Engineer",
+          "organization": "BluePeak Systems",
+          "location": "Bengaluru",
+          "dateDisplay": "Aug 2021 – Jun 2023",
+          "startDate": "2021-08",
+          "endDate": "2023-06",
+          "bullets": [
+            "Built and maintained React interfaces and Node.js services for a customer operations platform.",
+            "Implemented asynchronous CSV import workflows with validation, retries, and progress tracking.",
+            "Collaborated with QA and support teams to diagnose production incidents and improve operational logs."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "projects",
+      "type": "projects",
+      "title": "SELECTED PROJECTS",
+      "items": [
+        {
+          "name": "Multi-Tenant Operations Platform",
+          "dateDisplay": "2024 – 2026",
+          "date": null,
+          "links": [],
+          "bullets": [
+            "Designed API guards and permission scopes for team and department-level access.",
+            "Built audit-friendly activity logs and paginated reporting views for administrators."
+          ],
+          "technologies": [
+            "NestJS",
+            "PostgreSQL",
+            "React",
+            "Redis",
+            "AWS"
+          ]
+        },
+        {
+          "name": "Automated Reporting Pipeline",
+          "dateDisplay": "2023",
+          "date": "2023",
+          "links": [],
+          "bullets": [
+            "Implemented scheduled data aggregation jobs and downloadable CSV reports.",
+            "Added monitoring, error alerts, and run-history records to simplify support."
+          ],
+          "technologies": [
+            "Node.js",
+            "PostgreSQL",
+            "Docker",
+            "GitHub Actions"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "education",
+      "type": "education",
+      "title": "EDUCATION",
+      "items": [
+        {
+          "qualification": "B.Tech in Information Technology",
+          "institution": "Deccan Institute of Engineering",
+          "location": "Hyderabad",
+          "dateDisplay": "May 2021",
+          "completionDate": "2021-05",
+          "score": {
+            "label": "CGPA",
+            "value": "8.3/10"
+          }
+        }
+      ]
+    },
+    {
+      "id": "certifications",
+      "type": "certifications",
+      "title": "CERTIFICATIONS",
+      "items": [
+        {
+          "name": "AWS Certified Developer – Associate",
+          "issuer": "Amazon Web Services",
+          "durationDisplay": null,
+          "dateDisplay": "Jan 2024",
+          "url": "https://aws.amazon.com/certification/certified-developer-associate/"
+        },
+        {
+          "name": "Professional Scrum Master I (PSM I)",
+          "issuer": "Scrum.org",
+          "durationDisplay": null,
+          "dateDisplay": "Jan 2023",
+          "url": "https://www.scrum.org/assessments/professional-scrum-master-i-certification"
+        }
+      ]
+    },
+    {
+      "id": "awards",
+      "type": "bullet_list",
+      "title": "AWARDS AND ACHIEVEMENTS",
+      "items": [
+        "Received an internal engineering excellence award for improving reporting performance (2024).",
+        "Led the technical rollout of a permissions upgrade with no unplanned production downtime.",
+        "Presented internal knowledge-sharing sessions on API security and database indexing."
+      ]
+    }
+  ],
+  "rendering": {
+    "template": "classic-ats",
+    "page": {
+      "size": "A4",
+      "orientation": "portrait",
+      "marginMm": {
+        "top": 9,
+        "right": 14,
+        "bottom": 8,
+        "left": 14
+      }
+    },
+    "colors": {
+      "primary": "#1F3A68",
+      "body": "#202020",
+      "background": "#FFFFFF"
+    },
+    "fonts": {
+      "body": "Arial",
+      "heading": "Arial"
+    },
+    "layout": {
+      "headerAlignment": "center",
+      "sectionHeadingCase": "uppercase",
+      "sectionDivider": true,
+      "rightAlignDates": true,
+      "linksUnderlined": true,
+      "compactSpacing": true,
+      "keepEntryHeadingWithContent": true,
+      "allowAdditionalPages": true
+    },
+    "output": {
+      "format": "pdf",
+      "printBackground": true,
+      "preferCssPageSize": true,
+      "tagged": true
+    },
+    "typography": {
+      "unit": "pt",
+      "name": {
+        "fontSize": 22,
+        "fontWeight": 700,
+        "textTransform": "uppercase",
+        "textAlign": "center"
+      },
+      "headline": {
+        "fontSize": 11.5,
+        "fontWeight": 700,
+        "colorToken": "primary",
+        "textAlign": "center"
+      },
+      "contact": {
+        "fontSize": 9,
+        "fontWeight": 400,
+        "textAlign": "center"
+      },
+      "sectionHeading": {
+        "fontSize": 11,
+        "fontWeight": 700,
+        "colorToken": "primary",
+        "textTransform": "uppercase"
+      },
+      "entryTitle": {
+        "fontSize": 9.8,
+        "fontWeight": 700
+      },
+      "companyAndEducationScore": {
+        "fontSize": 9,
+        "fontWeight": 400,
+        "fontStyle": "italic",
+        "colorToken": "primary"
+      },
+      "date": {
+        "fontSize": 9.2,
+        "fontWeight": 700,
+        "textAlign": "right"
+      },
+      "educationDate": {
+        "fontSize": 9.2,
+        "fontWeight": 700,
+        "fontStyle": "normal",
+        "textAlign": "right"
+      },
+      "body": {
+        "fontSize": 9.2,
+        "fontWeight": 400
+      },
+      "bullets": {
+        "fontSize": 9.2,
+        "fontWeight": 400
+      },
+      "skills": {
+        "fontSize": 9.2,
+        "fontWeight": 400
+      }
+    }
+  }
+}

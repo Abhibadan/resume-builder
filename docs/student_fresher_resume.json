@@ -1,0 +1,358 @@
+{
+  "schemaVersion": "1.0.0",
+  "document": {
+    "type": "resume",
+    "language": "en-IN",
+    "pageSize": "A4",
+    "contentVariant": "student-fresher",
+    "sampleData": true
+  },
+  "profile": {
+    "fullName": "Ishita Mehta",
+    "headline": "Computer Science Graduate | Junior Software Developer",
+    "contact": {
+      "phone": "+91 90000 00001",
+      "email": "ishita.mehta@example.com",
+      "location": {
+        "display": "Pune, Maharashtra",
+        "city": "Pune",
+        "state": "Maharashtra",
+        "country": "India"
+      },
+      "links": [
+        {
+          "label": "LinkedIn",
+          "url": "https://example.com/ishita-linkedin",
+          "type": "linkedin"
+        },
+        {
+          "label": "GitHub",
+          "url": "https://example.com/ishita-github",
+          "type": "github"
+        },
+        {
+          "label": "Portfolio",
+          "url": "https://example.com/ishita-portfolio",
+          "type": "portfolio"
+        }
+      ]
+    }
+  },
+  "sections": [
+    {
+      "id": "summary",
+      "type": "summary",
+      "title": "PROFESSIONAL SUMMARY",
+      "content": "Recent B.Tech Computer Science graduate with practical experience building web applications using TypeScript, React, Node.js, and PostgreSQL. Comfortable with REST APIs, testing, Git workflows, and debugging. Looking for an entry-level software development role where I can contribute clean, maintainable code and keep learning from experienced engineers."
+    },
+    {
+      "id": "skills",
+      "type": "skill_groups",
+      "title": "SKILLS",
+      "items": [
+        {
+          "label": "Languages",
+          "values": [
+            "TypeScript",
+            "JavaScript",
+            "Python",
+            "SQL",
+            "Java"
+          ]
+        },
+        {
+          "label": "Frontend",
+          "values": [
+            "React",
+            "Next.js",
+            "HTML5",
+            "CSS3",
+            "Tailwind CSS"
+          ]
+        },
+        {
+          "label": "Backend & Databases",
+          "values": [
+            "Node.js",
+            "Express",
+            "REST APIs",
+            "PostgreSQL",
+            "MongoDB"
+          ]
+        },
+        {
+          "label": "Tools & Practices",
+          "values": [
+            "Git",
+            "GitHub",
+            "Postman",
+            "Docker basics",
+            "Jest",
+            "Agile fundamentals"
+          ]
+        },
+        {
+          "label": "Soft Skills",
+          "values": [
+            "Problem Solving",
+            "Teamwork",
+            "Communication",
+            "Time Management"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "experience",
+      "type": "experience",
+      "title": "INTERNSHIP EXPERIENCE",
+      "items": [
+        {
+          "role": "Web Development Intern",
+          "organization": "BrightPath Digital Labs",
+          "location": "Pune",
+          "dateDisplay": "Jan 2026 – Mar 2026",
+          "startDate": "2026-01",
+          "endDate": "2026-03",
+          "bullets": [
+            "Implemented reusable React components for an internal task-tracking application.",
+            "Integrated REST API endpoints and added client-side form validation and loading states.",
+            "Fixed interface bugs reported during testing and documented setup steps for other interns."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "projects",
+      "type": "projects",
+      "title": "ACADEMIC PROJECTS",
+      "items": [
+        {
+          "name": "Campus Placement Portal",
+          "dateDisplay": "Apr 2026",
+          "date": "2026-04",
+          "links": [
+            {
+              "label": "GitHub",
+              "url": "https://example.com/ishita-placement-repo"
+            }
+          ],
+          "bullets": [
+            "Developed a role-based portal where students upload profiles and recruiters manage job postings.",
+            "Built authentication, search filters, and application status tracking with REST APIs.",
+            "Added unit tests for key validation utilities and documented database schema decisions."
+          ],
+          "technologies": [
+            "React",
+            "TypeScript",
+            "Node.js",
+            "Express",
+            "PostgreSQL"
+          ]
+        },
+        {
+          "name": "Personal Expense Tracker",
+          "dateDisplay": "Dec 2025",
+          "date": "2025-12",
+          "links": [
+            {
+              "label": "GitHub",
+              "url": "https://example.com/ishita-expense-repo"
+            }
+          ],
+          "bullets": [
+            "Created a responsive expense dashboard with category totals and monthly charts.",
+            "Implemented CRUD operations, input validation, and CSV export."
+          ],
+          "technologies": [
+            "Next.js",
+            "TypeScript",
+            "Prisma",
+            "SQLite",
+            "Chart.js"
+          ]
+        },
+        {
+          "name": "Library Book Recommendation Prototype",
+          "dateDisplay": "Aug 2025",
+          "date": "2025-08",
+          "links": [],
+          "bullets": [
+            "Built a content-based recommendation prototype using book metadata and similarity scores.",
+            "Prepared a short report covering dataset limitations and evaluation examples."
+          ],
+          "technologies": [
+            "Python",
+            "Pandas",
+            "scikit-learn",
+            "Jupyter Notebook"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "education",
+      "type": "education",
+      "title": "EDUCATION",
+      "items": [
+        {
+          "qualification": "B.Tech in Computer Science and Engineering",
+          "institution": "Riverdale Institute of Technology",
+          "location": "Pune",
+          "dateDisplay": "Jun 2026",
+          "completionDate": "2026-06",
+          "score": {
+            "label": "CGPA",
+            "value": "8.7/10"
+          }
+        },
+        {
+          "qualification": "Higher Secondary (Class XII), Science",
+          "institution": "Sunrise Public School",
+          "location": "Pune",
+          "dateDisplay": "Mar 2022",
+          "completionDate": "2022-03",
+          "score": {
+            "label": "Percentage",
+            "value": "91%"
+          }
+        }
+      ]
+    },
+    {
+      "id": "certifications",
+      "type": "certifications",
+      "title": "CERTIFICATIONS",
+      "items": [
+        {
+          "name": "JavaScript Algorithms and Data Structures",
+          "issuer": "freeCodeCamp",
+          "durationDisplay": null,
+          "dateDisplay": "Jan 2025",
+          "url": "https://www.freecodecamp.org/learn/"
+        },
+        {
+          "name": "Introduction to Git and GitHub",
+          "issuer": "Coursera",
+          "durationDisplay": null,
+          "dateDisplay": "Jan 2025",
+          "url": "https://www.coursera.org/learn/introduction-git-github"
+        },
+        {
+          "name": "SQL (Basic)",
+          "issuer": "HackerRank",
+          "durationDisplay": null,
+          "dateDisplay": "Jan 2025",
+          "url": "https://www.hackerrank.com/skills-verification/sql_basic"
+        }
+      ]
+    },
+    {
+      "id": "awards",
+      "type": "bullet_list",
+      "title": "AWARDS AND ACHIEVEMENTS",
+      "items": [
+        "Finalist in an inter-college software prototype competition (2025).",
+        "Coordinated a four-member team for the final-year capstone project.",
+        "Solved 150+ programming practice problems across arrays, strings, and basic algorithms."
+      ]
+    }
+  ],
+  "rendering": {
+    "template": "classic-ats",
+    "page": {
+      "size": "A4",
+      "orientation": "portrait",
+      "marginMm": {
+        "top": 9,
+        "right": 14,
+        "bottom": 8,
+        "left": 14
+      }
+    },
+    "colors": {
+      "primary": "#1F3A68",
+      "body": "#202020",
+      "background": "#FFFFFF"
+    },
+    "fonts": {
+      "body": "Arial",
+      "heading": "Arial"
+    },
+    "layout": {
+      "headerAlignment": "center",
+      "sectionHeadingCase": "uppercase",
+      "sectionDivider": true,
+      "rightAlignDates": true,
+      "linksUnderlined": true,
+      "compactSpacing": true,
+      "keepEntryHeadingWithContent": true,
+      "allowAdditionalPages": true
+    },
+    "output": {
+      "format": "pdf",
+      "printBackground": true,
+      "preferCssPageSize": true,
+      "tagged": true
+    },
+    "typography": {
+      "unit": "pt",
+      "name": {
+        "fontSize": 22,
+        "fontWeight": 700,
+        "textTransform": "uppercase",
+        "textAlign": "center"
+      },
+      "headline": {
+        "fontSize": 11.5,
+        "fontWeight": 700,
+        "colorToken": "primary",
+        "textAlign": "center"
+      },
+      "contact": {
+        "fontSize": 9,
+        "fontWeight": 400,
+        "textAlign": "center"
+      },
+      "sectionHeading": {
+        "fontSize": 11,
+        "fontWeight": 700,
+        "colorToken": "primary",
+        "textTransform": "uppercase"
+      },
+      "entryTitle": {
+        "fontSize": 9.8,
+        "fontWeight": 700
+      },
+      "companyAndEducationScore": {
+        "fontSize": 9,
+        "fontWeight": 400,
+        "fontStyle": "italic",
+        "colorToken": "primary"
+      },
+      "date": {
+        "fontSize": 9.2,
+        "fontWeight": 700,
+        "textAlign": "right"
+      },
+      "educationDate": {
+        "fontSize": 9.2,
+        "fontWeight": 700,
+        "fontStyle": "normal",
+        "textAlign": "right"
+      },
+      "body": {
+        "fontSize": 9.2,
+        "fontWeight": 400
+      },
+      "bullets": {
+        "fontSize": 9.2,
+        "fontWeight": 400
+      },
+      "skills": {
+        "fontSize": 9.2,
+        "fontWeight": 400
+      }
+    }
+  }
+}
