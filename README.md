@@ -207,3 +207,68 @@ curl --fail-with-body \
 Run `pnpm test` for validation and HTML checks and `pnpm test:e2e` for the
 HTTP, PDF, and overflow checks. The fixtures include the full resume, a
 student resume, and an experienced professional resume.
+
+## Student resume editor
+
+Start the application and open `http://localhost:3000/resumes/editor`. The editor
+has separate fields for profile and contact, summary, skills, experience,
+projects, education, certifications, and achievements. Add or remove entries,
+toggle section and contact-link visibility, choose a skills style, and add or
+hide education scores. Import accepts a plain resume fixture or a JSON export
+from the editor. The editor starts a blank student resume.
+
+Changes trigger a debounced A4 preview. The page indicator reports the actual
+PDF page count and the configured limit. Expand **Excluded content** to see
+which entries were removed and why. **Download PDF** saves the PDF displayed
+in the preview. **Open to print** opens the same file in the browser's PDF
+viewer for printing. **Download JSON** keeps the complete validated resume,
+including content excluded by fitting, along with the selected preset
+revision and resume-specific layout overrides.
+
+### Fit rules and template presets
+
+The built-in `classic-ats` preset defaults to one page and keeps education.
+The editor can override the page limit, education exclusion, and the
+priority, protection, and item limit for each section type. Student presets
+apply when `document.contentVariant` is `student-fresher`. Overrides apply
+in this order, from lowest to highest precedence: preset, student overrides,
+resume settings.
+
+The layout engine applies item limits, then removes lower-priority content
+first if the browser-generated PDF still exceeds the target. Ties favor
+keeping earlier sections and entries. Original order is preserved in the
+output. To protect specific entries in a section, provide their zero-based
+indexes in `protectedItemIndexes`. A protected section keeps all its entries.
+Education is eligible for reduction only when education exclusion is enabled
+and the relevant content is unprotected. Manual visibility choices still apply.
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /resumes/templates` | List active presets and their latest versions |
+| `GET /resumes/templates/:id?version=1` | Read a pinned version, or omit the query for the latest active version |
+| `POST /resumes/templates` | Create a preset with `{ id, config }` |
+| `PUT /resumes/templates/:id` | Add a version with `{ expectedVersion, config }` |
+| `DELETE /resumes/templates/:id?version=2` | Archive the preset if the latest version matches |
+| `POST /resumes/preview` | Return a base64-encoded PDF and a fit report |
+| `POST /resumes/export/pdf` | Download a fitted PDF, or return 422 with the report when it overflows |
+| `POST /resumes/export/json` | Download a round-trippable JSON document with a pinned preset version |
+
+The preview and export endpoints accept `{ resume, template?, layout? }`.
+`template` takes `{ id, version? }`. `layout` optionally overrides
+`maxPages`, `allowEducationExclusion`, and `sections`, which is keyed by
+section type. Each section rule can set `priority` (0–100, higher is kept
+first), `maxItems` (0–100), and `protected` (boolean). The report includes
+page count after item limits, final page count, measured content height,
+overflow status, excluded items, and warnings. The existing
+`POST /resumes/render` continues to accept a plain resume and render all
+visible content without applying fit rules.
+
+The read-only default configuration lives in
+[`default-template.json`](src/resumes/templates/default-template.json).
+Custom presets use atomic file writes under `RESUME_TEMPLATE_DIR`, which
+defaults to `.resume-templates` in the working directory. Use a persistent
+directory with a single application instance. Updates require the current
+version, and archived presets remain readable by explicit version so saved
+JSON exports can still be opened. Preset management is intended for a local
+or access-controlled deployment. Resume contents and generation history
+are kept out of server storage.

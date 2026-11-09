@@ -4,7 +4,7 @@ import { resumeBodyParser } from './resumes/resume-body-parser.js';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
-    app.use('/resumes/render', resumeBodyParser);
+    app.use('/resumes', resumeBodyParser);
     app.enableShutdownHooks();
     await app.listen(process.env.PORT ?? 3000);
 }

@@ -1,0 +1,21 @@
+{
+    "name": "Classic ATS",
+    "maxPages": 1,
+    "allowEducationExclusion": false,
+    "sections": {
+        "education": { "priority": 100 },
+        "experience": { "priority": 90 },
+        "skill_groups": { "priority": 80 },
+        "projects": { "priority": 60 },
+        "summary": { "priority": 50 },
+        "certifications": { "priority": 30 },
+        "bullet_list": { "priority": 20 }
+    },
+    "studentOverrides": {
+        "sections": {
+            "education": { "priority": 100 },
+            "projects": { "priority": 95 },
+            "experience": { "priority": 70 }
+        }
+    }
+}

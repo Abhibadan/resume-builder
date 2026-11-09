@@ -3,7 +3,7 @@ import { json, type RequestHandler } from 'express';
 const parseResumeJson = json({ limit: '100kb', inflate: false });
 
 export const resumeBodyParser: RequestHandler = (req, res, next) => {
-    if (req.method !== 'POST') return next();
+    if (req.method !== 'POST' && req.method !== 'PUT') return next();
     if (!req.is('application/json')) {
         res.status(415).json({
             statusCode: 415,

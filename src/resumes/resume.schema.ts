@@ -23,18 +23,22 @@ const link = z.strictObject({ label: text, url, type: text.optional() });
 const links = z.array(link).max(12);
 const contactLinks = z.array(link.extend({ visible: z.boolean().default(true) })).max(12);
 const section = { id: text, title: text, visible: z.boolean().default(true) };
+const itemSection = {
+    ...section,
+    protectedItemIndexes: z.array(z.number().int().min(0).max(99)).max(100).optional(),
+};
 const entryDate = { dateDisplay: metadata };
 
 const sectionSchema = z.discriminatedUnion('type', [
     z.strictObject({ ...section, type: z.literal('summary'), content: prose }),
     z.strictObject({
-        ...section,
+        ...itemSection,
         type: z.literal('skill_groups'),
         style: z.enum(['grouped', 'bullets']).default('grouped'),
         items: z.array(z.strictObject({ label: text, values })).max(100),
     }),
     z.strictObject({
-        ...section,
+        ...itemSection,
         type: z.literal('experience'),
         items: z
             .array(
@@ -51,7 +55,7 @@ const sectionSchema = z.discriminatedUnion('type', [
             .max(100),
     }),
     z.strictObject({
-        ...section,
+        ...itemSection,
         type: z.literal('projects'),
         items: z
             .array(
@@ -67,7 +71,7 @@ const sectionSchema = z.discriminatedUnion('type', [
             .max(100),
     }),
     z.strictObject({
-        ...section,
+        ...itemSection,
         type: z.literal('education'),
         items: z
             .array(
@@ -89,7 +93,7 @@ const sectionSchema = z.discriminatedUnion('type', [
             .max(100),
     }),
     z.strictObject({
-        ...section,
+        ...itemSection,
         type: z.literal('certifications'),
         items: z
             .array(
@@ -111,7 +115,7 @@ const sectionSchema = z.discriminatedUnion('type', [
             .max(100),
     }),
     z.strictObject({
-        ...section,
+        ...itemSection,
         type: z.literal('bullet_list'),
         items: bullets,
     }),
@@ -273,41 +277,55 @@ const rendering = z.strictObject({
     }),
 });
 
-export const resumeSchema = z.strictObject({
-    schemaVersion: z.literal('1.0.0'),
-    document: z
-        .strictObject({
-            type: z.literal('resume'),
-            language: z.string().regex(/^[a-z]{2,8}(?:-[a-z\d]{1,8})*$/i),
-            sourceFilename: text.optional(),
-            pageSize: z.literal('A4'),
-            sourcePageCount: z.number().int().positive().optional(),
-            contentVariant: text.optional(),
-            sampleData: z.boolean().optional(),
-        })
-        .optional(),
-    profile: z.strictObject({
-        fullName: text,
-        headline: metadata,
-        contact: z
+export const resumeSchema = z
+    .strictObject({
+        schemaVersion: z.literal('1.0.0'),
+        document: z
             .strictObject({
-                phone: metadata,
-                email: z.email().max(254).nullish(),
-                location: z
-                    .strictObject({
-                        display: text,
-                        city: metadata,
-                        state: metadata,
-                        country: metadata,
-                    })
-                    .nullish(),
-                links: contactLinks.optional(),
+                type: z.literal('resume'),
+                language: z.string().regex(/^[a-z]{2,8}(?:-[a-z\d]{1,8})*$/i),
+                sourceFilename: text.optional(),
+                pageSize: z.literal('A4'),
+                sourcePageCount: z.number().int().positive().optional(),
+                contentVariant: text.optional(),
+                sampleData: z.boolean().optional(),
             })
-            .nullish(),
-    }),
-    sections: z.array(sectionSchema).max(32),
-    rendering: rendering.prefault({}),
-});
+            .optional(),
+        profile: z.strictObject({
+            fullName: text,
+            headline: metadata,
+            contact: z
+                .strictObject({
+                    phone: metadata,
+                    email: z.email().max(254).nullish(),
+                    location: z
+                        .strictObject({
+                            display: text,
+                            city: metadata,
+                            state: metadata,
+                            country: metadata,
+                        })
+                        .nullish(),
+                    links: contactLinks.optional(),
+                })
+                .nullish(),
+        }),
+        sections: z.array(sectionSchema).max(32),
+        rendering: rendering.prefault({}),
+    })
+    .superRefine(({ sections }, context) => {
+        sections.forEach((section, sectionIndex) => {
+            if (section.type === 'summary') return;
+            section.protectedItemIndexes?.forEach((index, optionIndex) => {
+                if (index < section.items.length) return;
+                context.addIssue({
+                    code: 'custom',
+                    path: ['sections', sectionIndex, 'protectedItemIndexes', optionIndex],
+                    message: 'Protected index must refer to an existing item',
+                });
+            });
+        });
+    });
 
 export type Resume = z.infer<typeof resumeSchema>;
 export type ResumeSection = z.infer<typeof sectionSchema>;
