@@ -13,6 +13,12 @@ const baseResume = {
     schemaVersion: '1.0.0',
     profile: { fullName: 'Student Example' },
 };
+const requiredProject = {
+    id: 'required-project',
+    type: 'projects',
+    title: 'Projects',
+    items: [{ name: 'Portfolio project' }],
+};
 
 const longEntry = Array.from(
     { length: 48 },
@@ -47,6 +53,8 @@ describe('resume editor workflow', () => {
             .expect(200)
             .expect('Content-Type', /text\/html/);
         expect(editor.text).toContain('Student resume builder');
+        expect(editor.text).toContain('Import JSON');
+        expect(editor.text).toContain('Download JSON');
         await http
             .get('/resumes/editor.js')
             .expect(200)
@@ -83,6 +91,7 @@ describe('resume editor workflow', () => {
     it('reduces lower priority content and applies student overrides to the order', async () => {
         const http = request(app.getHttpServer());
         const sections = [
+            requiredProject,
             { id: 'work', type: 'experience', title: 'Experience', items: [{ role: 'Intern', bullets: [longEntry] }] },
             {
                 id: 'projects',
@@ -116,6 +125,7 @@ describe('resume editor workflow', () => {
         const resume = {
             ...baseResume,
             sections: [
+                requiredProject,
                 {
                     id: 'awards',
                     type: 'bullet_list',
@@ -165,6 +175,7 @@ describe('resume editor workflow', () => {
         const resume = {
             ...baseResume,
             sections: [
+                requiredProject,
                 {
                     id: 'work',
                     type: 'experience',
@@ -182,5 +193,37 @@ describe('resume editor workflow', () => {
             .expect(200)
             .expect('Content-Type', 'application/pdf');
         expect((await PDFDocument.load(exported.body)).getPageCount()).toBe(2);
+    });
+
+    it('requires a visible project and counts hidden and repeated sections toward the six-entry limit', async () => {
+        const http = request(app.getHttpServer());
+        const hiddenProjects = { ...requiredProject, id: 'hidden-projects', visible: false };
+        const experience = {
+            id: 'experience',
+            type: 'experience',
+            title: 'Experience',
+            items: Array.from({ length: 4 }, (_, index) => ({ role: `Role ${index + 1}` })),
+        };
+        const send = (sections: unknown[], endpoint = 'export/json') =>
+            http.post(`/resumes/${endpoint}`).send({ resume: { ...baseResume, sections } });
+        const missing = await send([hiddenProjects], 'preview').expect(400);
+        expect(missing.body.issues).toContainEqual(expect.objectContaining({ path: 'resume.sections.projects' }));
+        await send([requiredProject, hiddenProjects, experience]).expect(200);
+        const overLimit = await send(
+            [requiredProject, hiddenProjects, { ...experience, items: [...experience.items, { role: 'Role 5' }] }],
+            'export/pdf',
+        ).expect(400);
+        expect(overLimit.body.issues).toContainEqual(expect.objectContaining({ path: 'resume.sections.2.items' }));
+        const fitted = await http
+            .post('/resumes/preview')
+            .send({
+                resume: { ...baseResume, sections: [requiredProject] },
+                layout: { sections: { projects: { maxItems: 0 } } },
+            })
+            .expect(200);
+        expect(fitted.body.report.exclusions).toEqual([]);
+        expect(fitted.body.report.warnings).toContain(
+            'Projects exceeds its item limit because it contains protected content.',
+        );
     });
 });

@@ -6,6 +6,15 @@ const status = document.querySelector('#status');
 const warning = document.querySelector('#validation-warning');
 const pdfButton = document.querySelector('#download-pdf');
 const printButton = document.querySelector('#print');
+const maxProjectExperienceEntries = 6;
+
+function countProjectExperienceEntries() {
+    return resume.sections.reduce(
+        (count, section) =>
+            section.type === 'projects' || section.type === 'experience' ? count + section.items.length : count,
+        0,
+    );
+}
 
 const sectionLabels = {
     summary: 'Professional summary',
@@ -303,6 +312,18 @@ function layoutEditor() {
 
 function sectionEditor(section, sectionIndex) {
     const box = group(sectionLabels[section.type]);
+    const isProjectOrExperience = section.type === 'projects' || section.type === 'experience';
+    const combinedCount = isProjectOrExperience ? countProjectExperienceEntries() : 0;
+    if (isProjectOrExperience) {
+        const requirement = section.type === 'projects' ? ' At least one project must be visible.' : '';
+        box.append(
+            node(
+                'p',
+                `${combinedCount} / ${maxProjectExperienceEntries} entries across Projects and Experience, including hidden sections.${requirement}`,
+                'text-sm text-slate-600',
+            ),
+        );
+    }
     const controls = grid(
         property(section, 'title', 'Section heading'),
         property(section, 'visible', 'Show section', 'checkbox', true),
@@ -368,16 +389,17 @@ function sectionEditor(section, sectionIndex) {
     if (section.type === 'summary') box.append(property(section, 'content', 'Summary', 'textarea'));
     else {
         section.items.forEach((item, index) => box.append(itemEditor(section, item, index)));
-        box.append(
-            button(
-                'Add entry',
-                redraw(() => {
-                    if (section.type === 'bullet_list') section.items.push('');
-                    else if (section.type === 'skill_groups') section.items.push({ values: [] });
-                    else section.items.push({ [itemFields[section.type][0][0]]: '' });
-                }),
-            ),
+        const addEntry = button(
+            'Add entry',
+            redraw(() => {
+                if (section.type === 'bullet_list') section.items.push('');
+                else if (section.type === 'skill_groups') section.items.push({ values: [] });
+                else section.items.push({ [itemFields[section.type][0][0]]: '' });
+            }),
         );
+        addEntry.disabled = isProjectOrExperience && combinedCount >= maxProjectExperienceEntries;
+        fieldControls.get(section).set('addEntry', { input: addEntry });
+        box.append(addEntry);
     }
     const actions = node('div', undefined, 'flex flex-wrap items-center gap-1.5');
     actions.append(
@@ -585,6 +607,13 @@ function setBadge(label, state) {
 }
 
 function describeIssue(path, data) {
+    if (path === 'resume.sections.projects') {
+        const projects = data && resume.sections.filter((section) => section.type === 'projects');
+        const hidden = projects?.find((section) => section.visible === false && section.items.length);
+        const section = hidden ?? projects?.[0];
+        const input = fieldControls.get(section)?.get(hidden ? 'visible' : 'addEntry')?.input;
+        return { label: 'Projects', input: input?.disabled ? undefined : input };
+    }
     const keys = path.split('.');
     const section = keys[1] === 'sections' ? data?.resume.sections[keys[2]] : undefined;
     let owner = data;

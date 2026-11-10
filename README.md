@@ -115,9 +115,11 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 
 ## Resume PDF API
 
-Install Playwright's Chromium on the host before running the service or the
-end-to-end tests. On supported Linux distributions, the combined command also
-installs the required system libraries and fonts. [Playwright browser setup](https://playwright.dev/docs/browsers#install-system-dependencies)
+On Linux, the renderer uses packaged Google Chrome when installed at
+`/opt/google/chrome/chrome`. Otherwise, install Playwright's Chromium before
+running the service or the end-to-end tests. On supported Linux distributions,
+the combined command also installs the required system libraries and fonts.
+[Playwright browser setup](https://playwright.dev/docs/browsers#install-system-dependencies)
 
 ```bash
 pnpm install
@@ -125,8 +127,8 @@ pnpm exec playwright install --with-deps chromium
 pnpm start
 ```
 
-Set `RESUME_CHROMIUM_EXECUTABLE_PATH` to an absolute executable path to use a
-locally installed Chrome or Chromium. For a Linux deployment image, install the
+Set `RESUME_CHROMIUM_EXECUTABLE_PATH` to an absolute executable path to override
+browser selection. For a Linux deployment image, install the
 matching browser and OS dependencies during the image build. If using a shared
 browser directory, set `PLAYWRIGHT_BROWSERS_PATH` to the same directory at build
 time and runtime. Run the service as a non-root user with a container seccomp

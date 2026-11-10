@@ -1,4 +1,5 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { existsSync } from 'node:fs';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
 import type { Resume } from './resume.schema.js';
 
@@ -85,12 +86,7 @@ export class ResumePdfRenderer implements OnModuleDestroy {
     }
 
     private getBrowser(): Promise<Browser> {
-        this.browserPromise ??= chromium
-            .launch({
-                executablePath: process.env.RESUME_CHROMIUM_EXECUTABLE_PATH,
-                chromiumSandbox: true,
-                timeout: 10_000,
-            })
+        this.browserPromise ??= this.launchBrowser()
             .then((browser) => {
                 browser.once('disconnected', () => {
                     this.browserPromise = undefined;
@@ -103,5 +99,15 @@ export class ResumePdfRenderer implements OnModuleDestroy {
             });
 
         return this.browserPromise;
+    }
+
+    private launchBrowser(): Promise<Browser> {
+        const executablePath = process.env.RESUME_CHROMIUM_EXECUTABLE_PATH?.trim() || undefined;
+        // Packaged Chrome can use its own AppArmor profile on Linux.
+        const channel =
+            !executablePath && process.platform === 'linux' && existsSync('/opt/google/chrome/chrome')
+                ? 'chrome'
+                : undefined;
+        return chromium.launch({ executablePath, channel, chromiumSandbox: true, timeout: 10_000 });
     }
 }

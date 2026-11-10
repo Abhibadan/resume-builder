@@ -62,14 +62,22 @@ export class ResumeLayoutService {
         const limits: Removal[] = [];
         const candidates: (Removal & { priority: number })[] = [];
         const warnings: string[] = [];
+        const sectionRule = (type: ResumeSection['type']) => ({
+            ...config.sections[type],
+            ...overrides?.sections?.[type],
+            ...options?.sections?.[type],
+        });
+        const visibleProjects = resume.sections
+            .filter((section) => section.type === 'projects')
+            .filter((section) => section.visible && section.items.length > 0);
+        const hasProtectedProject =
+            sectionRule('projects').protected ||
+            visibleProjects.some((section) => section.protectedItemIndexes?.length);
+        const requiredProjectSection = hasProtectedProject ? undefined : visibleProjects[0];
 
         resume.sections.forEach((section, sectionIndex) => {
             if (!section.visible) return;
-            const rule = {
-                ...config.sections[section.type],
-                ...overrides?.sections?.[section.type],
-                ...options?.sections?.[section.type],
-            };
+            const rule = sectionRule(section.type);
             const isProtected = rule.protected || (section.type === 'education' && !allowEducationExclusion);
             const priority = rule.priority ?? 50;
             if (section.type === 'summary') {
@@ -78,6 +86,7 @@ export class ResumeLayoutService {
             }
 
             const protectedItems = new Set(section.protectedItemIndexes);
+            if (section === requiredProjectSection) protectedItems.add(0);
             const maxItems = rule.maxItems ?? section.items.length;
             let remaining = section.items.length;
             for (let itemIndex = remaining - 1; itemIndex >= 0; itemIndex--) {

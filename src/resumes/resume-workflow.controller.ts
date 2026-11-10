@@ -18,11 +18,36 @@ import { resumeSchema } from './resume.schema.js';
 import { layoutOverridesSchema, templateRefSchema } from './templates/template.schema.js';
 import { defaultTemplateId, TemplateService } from './templates/template.service.js';
 
-const workflowSchema = z.strictObject({
-    resume: resumeSchema,
-    template: templateRefSchema.default({ id: defaultTemplateId }),
-    layout: layoutOverridesSchema.optional(),
-});
+const workflowSchema = z
+    .strictObject({
+        resume: resumeSchema,
+        template: templateRefSchema.default({ id: defaultTemplateId }),
+        layout: layoutOverridesSchema.optional(),
+    })
+    .superRefine(({ resume }, context) => {
+        if (
+            !resume.sections.some((section) => section.type === 'projects' && section.visible && section.items.length)
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['resume', 'sections', 'projects'],
+                message: 'Add at least one project and make sure its section is visible.',
+            });
+        }
+
+        let count = 0;
+        for (const [index, section] of resume.sections.entries()) {
+            if (section.type !== 'projects' && section.type !== 'experience') continue;
+            count += section.items.length;
+            if (count <= 6) continue;
+            context.addIssue({
+                code: 'custom',
+                path: ['resume', 'sections', index, 'items'],
+                message: 'Keep at most 6 entries across Projects and Experience, including hidden sections.',
+            });
+            break;
+        }
+    });
 type Workflow = z.infer<typeof workflowSchema>;
 
 interface ResumePreview {
