@@ -115,25 +115,12 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 
 ## Resume PDF API
 
-On Linux, the renderer uses packaged Google Chrome when installed at
-`/opt/google/chrome/chrome`. Otherwise, install Playwright's Chromium before
-running the service or the end-to-end tests. On supported Linux distributions,
-the combined command also installs the required system libraries and fonts.
-[Playwright browser setup](https://playwright.dev/docs/browsers#install-system-dependencies)
+The PDF generator uses a pure Node.js in-memory PDF engine (PDFKit) with zero browser or headless Chromium dependencies. It renders deterministic, tagged, ATS-friendly A4 PDFs with instant cold starts and minimal memory consumption (~15–25 MB).
 
 ```bash
 pnpm install
-pnpm exec playwright install --with-deps chromium
 pnpm start
 ```
-
-Set `RESUME_CHROMIUM_EXECUTABLE_PATH` to an absolute executable path to override
-browser selection. For a Linux deployment image, install the
-matching browser and OS dependencies during the image build. If using a shared
-browser directory, set `PLAYWRIGHT_BROWSERS_PATH` to the same directory at build
-time and runtime. Run the service as a non-root user with a container seccomp
-profile that permits Chromium's user namespaces. The renderer starts Chromium
-with sandboxing enabled. [Playwright Docker setup](https://playwright.dev/docs/docker#run-the-image)
 
 ### `POST /resumes/render`
 
