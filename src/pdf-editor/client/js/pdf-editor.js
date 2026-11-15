@@ -38,6 +38,37 @@ const btnStartBlank = document.getElementById('btn-start-blank');
 const imageUploadInput = document.getElementById('image-upload-input');
 const signPlacementBanner = document.getElementById('sign-placement-banner');
 const btnCancelSignTool = document.getElementById('btn-cancel-sign-tool');
+const btnOpenSignPadNow = document.getElementById('btn-open-sign-pad-now');
+const textPlacementBanner = document.getElementById('text-placement-banner');
+const btnCancelTextTool = document.getElementById('btn-cancel-text-tool');
+const btnAddTextCenter = document.getElementById('btn-add-text-center');
+
+function getCanvasPointer(opt, fCanvas) {
+    if (opt.scenePoint) {
+        return { x: opt.scenePoint.x, y: opt.scenePoint.y };
+    }
+    if (fCanvas && fCanvas.getScenePoint) {
+        const pt = fCanvas.getScenePoint(opt.e);
+        return { x: pt.x, y: pt.y };
+    }
+    if (fCanvas && fCanvas.getPointer) {
+        const pt = fCanvas.getPointer(opt.e);
+        return { x: pt.x, y: pt.y };
+    }
+    return { x: opt.e ? opt.e.offsetX : 100, y: opt.e ? opt.e.offsetY : 100 };
+}
+
+function findTextItemAt(textItems, px, py) {
+    if (!textItems || textItems.length === 0) return null;
+    return textItems.find((item) => {
+        return (
+            px >= item.x - 6 &&
+            px <= item.x + item.width + 6 &&
+            py >= item.y - 4 &&
+            py <= item.y + item.height + 4
+        );
+    });
+}
 
 // Context properties DOM
 const contextProps = document.getElementById('context-properties');
@@ -206,6 +237,12 @@ function extractSignatureBackground(imgElement, cutoff = 210, recolor = 'black')
     };
 
     for (let i = 0; i < data.length; i += 4) {
+        const a = data[i + 3];
+        // If pixel is already fully transparent (e.g. untouched canvas), keep it transparent!
+        if (a === 0) {
+            continue;
+        }
+
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
@@ -229,7 +266,7 @@ function extractSignatureBackground(imgElement, cutoff = 210, recolor = 'black')
 
             // Antialiased alpha smoothing at edge
             const alphaFactor = Math.min(1.0, Math.max(0.2, (cutoff - lum) / 35.0));
-            data[i + 3] = Math.round(255 * alphaFactor);
+            data[i + 3] = Math.round(a * alphaFactor);
 
             if (recolor in inkMap) {
                 data[i] = inkMap[recolor][0];
@@ -353,6 +390,30 @@ async function createPageElement(pageNum) {
     };
     await page.render(renderContext).promise;
 
+    // Extract text items from PDF.js for click-to-edit
+    const textItems = [];
+    try {
+        const textContent = await page.getTextContent();
+        for (const item of textContent.items) {
+            if (!item.str || !item.str.trim()) continue;
+            const tx = item.transform[4];
+            const ty = item.transform[5];
+            const [vx, vy] = viewport.convertToViewportPoint(tx, ty);
+            const fontSize = Math.hypot(item.transform[2], item.transform[3]) || item.height || 12;
+            textItems.push({
+                str: item.str,
+                x: Math.round(vx),
+                y: Math.round(Math.max(0, vy - fontSize)),
+                width: Math.round(item.width),
+                height: Math.round(Math.max(14, fontSize * 1.25)),
+                fontSize: Math.max(8, Math.round(fontSize)),
+                fontName: item.fontName,
+            });
+        }
+    } catch (e) {
+        console.warn('Text extraction failed on page ' + pageNum, e);
+    }
+
     // Layer 2: Fabric.js Interactive Canvas
     const fabricCanvasEl = document.createElement('canvas');
     fabricCanvasEl.id = `fabric-canvas-${pageIndex}`;
@@ -381,10 +442,68 @@ async function createPageElement(pageNum) {
         bgCanvas,
         fabricCanvas,
         isNew: false,
+        textItems,
+        textMadeEditable: false,
     };
 
     state.pages.push(pageData);
     bindFabricEvents(fabricCanvas, pageIndex);
+}
+
+function makePageTextEditable(pageIndex) {
+    const pageData = state.pages[pageIndex] || state.pages[0];
+    if (!pageData || !pageData.textItems || pageData.textItems.length === 0) {
+        alert('No text detected on Page ' + ((pageIndex || 0) + 1));
+        return;
+    }
+    const canvas = pageData.fabricCanvas;
+    if (pageData.textMadeEditable) {
+        alert('Existing text on Page ' + (pageData.index + 1) + ' is already editable! Click on any text box to modify it.');
+        return;
+    }
+
+    // Group adjacent items on the same line to form coherent editable sentences
+    const rawItems = [...pageData.textItems].sort((a, b) => (Math.abs(a.y - b.y) < 4 ? a.x - b.x : a.y - b.y));
+    const lines = [];
+    let currentLine = null;
+
+    for (const item of rawItems) {
+        if (!currentLine) {
+            currentLine = { ...item };
+            continue;
+        }
+        const sameLine = Math.abs(currentLine.y - item.y) <= 5;
+        const adjacent = item.x >= currentLine.x && (item.x - (currentLine.x + currentLine.width)) <= Math.max(20, item.fontSize * 1.6);
+        if (sameLine && adjacent) {
+            currentLine.str += (currentLine.str.endsWith(' ') || item.str.startsWith(' ') ? '' : ' ') + item.str;
+            currentLine.width = (item.x + item.width) - currentLine.x;
+            currentLine.height = Math.max(currentLine.height, item.height);
+        } else {
+            lines.push(currentLine);
+            currentLine = { ...item };
+        }
+    }
+    if (currentLine) lines.push(currentLine);
+
+    lines.forEach((line) => {
+        const textObj = new window.fabric.IText(line.str, {
+            left: Math.round(line.x),
+            top: Math.round(line.y),
+            originX: 'left',
+            originY: 'top',
+            fontSize: line.fontSize,
+            fontFamily: 'Arial',
+            fill: '#000000',
+            backgroundColor: '#ffffff',
+            padding: 1,
+        });
+        canvas.add(textObj);
+    });
+
+    pageData.textMadeEditable = true;
+    canvas.renderAll();
+    setActiveTool('select');
+    alert(`Converted ${lines.length} text lines on Page ${pageData.index + 1} into editable text boxes! Click on any line to edit text.`);
 }
 
 function appendBlankPage() {
@@ -473,16 +592,61 @@ function deletePage(pageIndex) {
 function bindFabricEvents(fCanvas, pageIndex) {
     fCanvas.on('mouse:down', (opt) => {
         state.activePageIndex = pageIndex;
+        const pointer = getCanvasPointer(opt, fCanvas);
 
         // If Signature tool is primed, click-to-place triggers the signature modal!
         if (state.activeTool === 'sign') {
-            const pointer = fCanvas.getPointer(opt.e);
             state.signPlacement = {
                 pageIndex,
                 x: pointer.x,
                 y: pointer.y,
             };
             openSignatureModal();
+            return;
+        }
+
+        // If Text tool is primed, click-to-place text at clicked position!
+        if (state.activeTool === 'text') {
+            if (opt.target) return; // Clicking an existing object selects it instead
+            const pageData = state.pages[pageIndex];
+            const matchedText = pageData ? findTextItemAt(pageData.textItems, pointer.x, pointer.y) : null;
+            if (matchedText) {
+                // Edit existing detected text in place!
+                const textObj = new window.fabric.IText(matchedText.str, {
+                    left: matchedText.x,
+                    top: matchedText.y,
+                    originX: 'left',
+                    originY: 'top',
+                    fontFamily: 'Arial',
+                    fontSize: matchedText.fontSize,
+                    fill: '#000000',
+                    backgroundColor: '#ffffff',
+                });
+                fCanvas.add(textObj);
+                fCanvas.setActiveObject(textObj);
+                textObj.enterEditing();
+                textObj.selectAll();
+                fCanvas.renderAll();
+                setActiveTool('select');
+                return;
+            }
+
+            // Otherwise place brand new text with top-left right at clicked coordinate!
+            const textObj = new window.fabric.IText('Type text here', {
+                left: Math.round(pointer.x),
+                top: Math.round(pointer.y),
+                originX: 'left',
+                originY: 'top',
+                fontFamily: 'Arial',
+                fontSize: 14,
+                fill: '#000000',
+            });
+            fCanvas.add(textObj);
+            fCanvas.setActiveObject(textObj);
+            textObj.enterEditing();
+            textObj.selectAll();
+            fCanvas.renderAll();
+            setActiveTool('select');
             return;
         }
     });
@@ -545,15 +709,27 @@ function setActiveTool(tool) {
         signPlacementBanner.classList.add('hidden');
     }
 
+    if (tool === 'text') {
+        textPlacementBanner?.classList.remove('hidden');
+    } else {
+        textPlacementBanner?.classList.add('hidden');
+    }
+
     // Toggle freehand drawing mode across all page canvases
     state.pages.forEach((p) => {
-        p.fabricCanvas.isDrawingMode = tool === 'draw' || tool === 'highlighter';
-        if (tool === 'draw') {
-            p.fabricCanvas.freeDrawingBrush.color = '#000000';
-            p.fabricCanvas.freeDrawingBrush.width = 2;
-        } else if (tool === 'highlighter') {
-            p.fabricCanvas.freeDrawingBrush.color = 'rgba(254, 240, 138, 0.45)'; // Semi-transparent yellow
-            p.fabricCanvas.freeDrawingBrush.width = 18;
+        const isDrawing = tool === 'draw' || tool === 'highlighter';
+        p.fabricCanvas.isDrawingMode = isDrawing;
+        if (isDrawing) {
+            if (!p.fabricCanvas.freeDrawingBrush) {
+                p.fabricCanvas.freeDrawingBrush = new window.fabric.PencilBrush(p.fabricCanvas);
+            }
+            if (tool === 'draw') {
+                p.fabricCanvas.freeDrawingBrush.color = '#000000';
+                p.fabricCanvas.freeDrawingBrush.width = 2;
+            } else if (tool === 'highlighter') {
+                p.fabricCanvas.freeDrawingBrush.color = 'rgba(254, 240, 138, 0.45)'; // Semi-transparent yellow
+                p.fabricCanvas.freeDrawingBrush.width = 18;
+            }
         }
     });
 }
@@ -564,13 +740,18 @@ function getActiveCanvas() {
 }
 
 // Add Text
-function addText() {
+function addText(x, y) {
     const canvas = getActiveCanvas();
     if (!canvas) return;
 
+    const posX = typeof x === 'number' ? x : canvas.width / 2 - 60;
+    const posY = typeof y === 'number' ? y : canvas.height / 3;
+
     const text = new window.fabric.IText('Type text here', {
-        left: canvas.width / 2 - 60,
-        top: canvas.height / 3,
+        left: posX,
+        top: posY,
+        originX: 'left',
+        originY: 'top',
         fontFamily: 'Arial',
         fontSize: 14,
         fill: '#000000',
@@ -597,6 +778,8 @@ function addShape(shapeType) {
         shape = new window.fabric.Rect({
             left: centerX - 60,
             top: centerY - 30,
+            originX: 'left',
+            originY: 'top',
             width: 120,
             height: 60,
             fill: 'transparent',
@@ -607,6 +790,8 @@ function addShape(shapeType) {
         shape = new window.fabric.Circle({
             left: centerX - 40,
             top: centerY - 40,
+            originX: 'left',
+            originY: 'top',
             radius: 40,
             fill: 'transparent',
             stroke: '#000000',
@@ -614,6 +799,8 @@ function addShape(shapeType) {
         });
     } else if (shapeType === 'line') {
         shape = new window.fabric.Line([centerX - 75, centerY, centerX + 75, centerY], {
+            originX: 'left',
+            originY: 'top',
             stroke: '#000000',
             strokeWidth: 2,
         });
@@ -633,12 +820,16 @@ function addShape(shapeType) {
         shape = new window.fabric.Group([line, head], {
             left: centerX - 55,
             top: centerY - 5,
+            originX: 'left',
+            originY: 'top',
         });
     } else if (shapeType === 'whiteout') {
         // Whiteout to cover/erase existing text on the PDF!
         shape = new window.fabric.Rect({
             left: centerX - 60,
             top: centerY - 12,
+            originX: 'left',
+            originY: 'top',
             width: 120,
             height: 24,
             fill: '#ffffff',
@@ -727,6 +918,8 @@ function handleImageUpload(file) {
             fabricImg.set({
                 left: (canvas.width - fabricImg.width * scale) / 2,
                 top: (canvas.height - fabricImg.height * scale) / 2,
+                originX: 'left',
+                originY: 'top',
             });
 
             canvas.add(fabricImg);
@@ -812,13 +1005,16 @@ async function confirmAndPlaceSignature() {
     const sigW = fabricImg.width * scale;
     const sigH = fabricImg.height * scale;
 
-    const posX = state.signPlacement ? state.signPlacement.x - sigW / 2 : (canvas.width - sigW) / 2;
-    const posY = state.signPlacement ? state.signPlacement.y - sigH / 2 : (canvas.height - sigH) / 2;
+    const posX = state.signPlacement ? state.signPlacement.x : (canvas.width - sigW) / 2;
+    const posY = state.signPlacement ? state.signPlacement.y : (canvas.height - sigH) / 2;
 
     fabricImg.set({
-        left: Math.max(10, Math.min(canvas.width - sigW - 10, posX)),
-        top: Math.max(10, Math.min(canvas.height - sigH - 10, posY)),
+        left: Math.max(0, Math.min(canvas.width - sigW, posX)),
+        top: Math.max(0, Math.min(canvas.height - sigH, posY)),
+        originX: 'left',
+        originY: 'top',
         hasRotatingPoint: true,
+        backgroundColor: 'transparent',
     });
 
     canvas.add(fabricImg);
@@ -974,8 +1170,8 @@ function initApp() {
     toolButtons.forEach((btn) => {
         btn.addEventListener('click', () => {
             const tool = btn.dataset.tool;
-            if (tool === 'text') {
-                addText();
+            if (tool === 'edit-text') {
+                makePageTextEditable(state.activePageIndex);
             } else if (tool === 'table') {
                 tableModal.classList.remove('hidden');
             } else {
@@ -1002,8 +1198,11 @@ function initApp() {
         imageUploadInput.value = '';
     });
 
-    // Cancel signature tool banner
-    btnCancelSignTool.addEventListener('click', () => setActiveTool('select'));
+    // Banners controls
+    btnCancelSignTool?.addEventListener('click', () => setActiveTool('select'));
+    btnOpenSignPadNow?.addEventListener('click', () => openSignatureModal());
+    btnCancelTextTool?.addEventListener('click', () => setActiveTool('select'));
+    btnAddTextCenter?.addEventListener('click', () => addText());
 
     // Context Property Bar Bindings
     propFontFamily.addEventListener('change', (e) => {
