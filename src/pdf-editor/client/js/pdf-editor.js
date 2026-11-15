@@ -134,6 +134,11 @@ class HistoryManager {
     undo() {
         if (!this.canUndo() || this.isExecuting) return false;
 
+        // Reset active drawing/text tool to select to avoid overlapping toolbars
+        if (typeof setActiveTool === 'function') {
+            setActiveTool('select');
+        }
+
         this.isExecuting = true;
         try {
             const action = this.current.action;
@@ -156,6 +161,11 @@ class HistoryManager {
 
     redo() {
         if (!this.canRedo() || this.isExecuting) return false;
+
+        // Reset active drawing/text tool to select to avoid overlapping toolbars
+        if (typeof setActiveTool === 'function') {
+            setActiveTool('select');
+        }
 
         this.isExecuting = true;
         try {
@@ -1235,6 +1245,10 @@ function onObjectSelected(obj) {
     if (!obj) return;
     state.selectedObject = obj;
     contextProps.classList.remove('hidden');
+
+    // Ensure tool property palettes do not overlap with object context properties
+    propPenGroup?.classList.add('hidden');
+    propHighlighterGroup?.classList.add('hidden');
 
     if (obj.type === 'i-text' || obj.type === 'text') {
         propTextGroup.classList.remove('hidden');
