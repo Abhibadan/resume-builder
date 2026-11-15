@@ -4,7 +4,7 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>PDF Document Studio & Sign</title>
-        <link rel="stylesheet" href="/pdf-editor/pdf-editor.css?v=5" />
+        <link rel="stylesheet" href="/pdf-editor/pdf-editor.css?v=6" />
         <script src="/pdf-editor/vendor/fabric.min.js"></script>
         <script src="/pdf-editor/vendor/pdf-lib.min.js"></script>
     </head>
@@ -63,102 +63,76 @@
 
         <!-- Secondary Toolbar Ribbon -->
         <nav id="toolbar-ribbon" class="flex flex-wrap items-center justify-between border-b border-slate-200 bg-white px-4 py-1.5 shadow-2xs z-10 min-h-11">
-            <div class="flex items-center gap-2 overflow-x-auto py-0.5">
-                <!-- Mode Switcher Segmented Control -->
-                <div class="flex items-center rounded-lg border border-slate-300 bg-slate-100 p-0.5 shadow-2xs shrink-0 mr-1">
-                    <button id="mode-annotate-btn" class="flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-semibold bg-white text-indigo-700 shadow-xs transition-all" data-mode="annotate" title="Normal Mode: Annotate, draw with pen/highlighter, and sign PDF">
-                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                        <span>Annotate & Sign</span>
-                    </button>
-                    <button id="mode-edit-text-btn" class="flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all" data-mode="edit-text" title="Edit PDF Text Mode: Edit, delete, and add text in place keeping exact alignment">
-                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                        <span>Edit PDF Text Mode</span>
-                    </button>
-                </div>
+            <div class="flex items-center gap-1.5 overflow-x-auto py-0.5" id="tools-group">
+                <button id="tool-select" class="btn-tool btn-tool-active" data-tool="select" title="Selection & Move (V)">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>
+                    <span>Select</span>
+                </button>
 
-                <!-- Annotate & Sign Tools Group (Visible in Annotate Mode) -->
-                <div id="tools-annotate-group" class="flex items-center gap-1">
-                    <button id="tool-select" class="btn-tool btn-tool-active" data-tool="select" title="Selection & Move (V)">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>
-                        <span>Select</span>
-                    </button>
+                <!-- Edit PDF Text Tool -->
+                <button id="tool-edit-text" class="btn-tool" data-tool="edit-text" title="Edit PDF Text (Click or drag-select any text section to edit in place)">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                    <span>Edit PDF Text</span>
+                </button>
 
-                    <button id="tool-text" class="btn-tool" data-tool="text" title="Add Sticky Text (Click anywhere on PDF to place)">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg>
-                        <span>Add Text</span>
-                    </button>
+                <button id="tool-text" class="btn-tool" data-tool="text" title="Add Sticky Text (Click anywhere on PDF to place)">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg>
+                    <span>Add Text</span>
+                </button>
 
-                    <!-- Shapes Dropdown / Buttons -->
-                    <div class="relative inline-block">
-                        <button id="tool-shapes-btn" class="btn-tool" title="Shapes (Rectangle, Circle, Line)">
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5z" /></svg>
-                            <span>Shapes</span>
-                            <svg class="h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                <!-- Shapes Dropdown / Buttons -->
+                <div class="relative inline-block">
+                    <button id="tool-shapes-btn" class="btn-tool" title="Shapes (Rectangle, Circle, Line)">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5z" /></svg>
+                        <span>Shapes</span>
+                        <svg class="h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    <div id="shapes-menu" class="hidden absolute left-0 top-full mt-1 w-44 rounded-lg border border-slate-200 bg-white py-1 shadow-lg z-30">
+                        <button class="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50" data-shape="rect">
+                            <span class="h-3 w-4 border border-slate-700"></span> Rectangle
                         </button>
-                        <div id="shapes-menu" class="hidden absolute left-0 top-full mt-1 w-44 rounded-lg border border-slate-200 bg-white py-1 shadow-lg z-30">
-                            <button class="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50" data-shape="rect">
-                                <span class="h-3 w-4 border border-slate-700"></span> Rectangle
-                            </button>
-                            <button class="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50" data-shape="circle">
-                                <span class="h-3.5 w-3.5 rounded-full border border-slate-700"></span> Circle / Oval
-                            </button>
-                            <button class="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50" data-shape="line">
-                                <span class="h-0.5 w-4 bg-slate-700"></span> Line
-                            </button>
-                            <button class="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50" data-shape="arrow">
-                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg> Arrow
-                            </button>
-                            <div class="my-1 border-t border-slate-100"></div>
-                            <button class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-50" data-shape="whiteout" title="Cover / Erase existing text">
-                                <span class="h-3 w-4 border border-slate-300 bg-white"></span> Whiteout (Erase)
-                            </button>
-                        </div>
+                        <button class="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50" data-shape="circle">
+                            <span class="h-3.5 w-3.5 rounded-full border border-slate-700"></span> Circle / Oval
+                        </button>
+                        <button class="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50" data-shape="line">
+                            <span class="h-0.5 w-4 bg-slate-700"></span> Line
+                        </button>
+                        <button class="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50" data-shape="arrow">
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg> Arrow
+                        </button>
+                        <div class="my-1 border-t border-slate-100"></div>
+                        <button class="flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-50" data-shape="whiteout" title="Cover / Erase existing text">
+                            <span class="h-3 w-4 border border-slate-300 bg-white"></span> Whiteout (Erase)
+                        </button>
                     </div>
-
-                    <button id="tool-draw" class="btn-tool" data-tool="draw" title="Freehand Pen">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                        <span>Pen</span>
-                    </button>
-
-                    <button id="tool-highlighter" class="btn-tool" data-tool="highlighter" title="Highlighter">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
-                        <span>Highlight</span>
-                    </button>
-
-                    <button id="tool-table" class="btn-tool" data-tool="table" title="Insert Table / Grid">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                        <span>Table</span>
-                    </button>
-
-                    <label class="btn-tool cursor-pointer" title="Add Image">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                        <span>Image</span>
-                        <input id="image-upload-input" type="file" accept="image/*" class="hidden" />
-                    </label>
-
-                    <!-- Dedicated Sign PDF Tool Button -->
-                    <button id="tool-sign" class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-2xs hover:bg-indigo-100 transition-colors" data-tool="sign" title="Sign PDF (Click anywhere on PDF to place)">
-                        <svg class="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" /></svg>
-                        <span>Sign PDF</span>
-                    </button>
                 </div>
 
-                <!-- Edit PDF Text Tools Group (Visible in Edit PDF Text Mode) -->
-                <div id="tools-text-mode-group" class="hidden flex items-center gap-1">
-                    <button id="tool-text-mode-select" class="btn-tool btn-tool-active" data-tool="select" title="Select and Edit Text Box">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>
-                        <span>Select Text</span>
-                    </button>
-                    <button id="tool-text-mode-add" class="btn-tool" data-tool="text" title="Add New Text Line / Box">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                        <span>Add Text Block</span>
-                    </button>
-                    <span class="mx-1 h-4 w-px bg-slate-200"></span>
-                    <button id="btn-text-mode-delete" class="btn-tool text-rose-600 hover:bg-rose-50" title="Delete Selected Text Box">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        <span>Delete Text</span>
-                    </button>
-                </div>
+                <button id="tool-draw" class="btn-tool" data-tool="draw" title="Freehand Pen">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    <span>Pen</span>
+                </button>
+
+                <button id="tool-highlighter" class="btn-tool" data-tool="highlighter" title="Highlighter">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
+                    <span>Highlight</span>
+                </button>
+
+                <button id="tool-table" class="btn-tool" data-tool="table" title="Insert Table / Grid">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                    <span>Table</span>
+                </button>
+
+                <label class="btn-tool cursor-pointer" title="Add Image">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <span>Image</span>
+                    <input id="image-upload-input" type="file" accept="image/*" class="hidden" />
+                </label>
+
+                <!-- Dedicated Sign PDF Tool Button -->
+                <button id="tool-sign" class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 shadow-2xs hover:bg-indigo-100 transition-colors" data-tool="sign" title="Sign PDF (Click anywhere on PDF to place)">
+                    <svg class="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" /></svg>
+                    <span>Sign PDF</span>
+                </button>
             </div>
 
             <!-- Dynamic Context Property Bar (shown when an element is selected) -->
@@ -237,22 +211,13 @@
             </div>
         </div>
 
-        <!-- Edit PDF Text Mode Active Banner -->
-        <div id="mode-edit-text-banner" class="hidden flex items-center justify-between bg-indigo-900 px-4 py-2 text-xs font-semibold text-white shadow-sm z-30">
+        <!-- Edit PDF Text Tool Placement Banner (Visible when Edit PDF Text tool is active) -->
+        <div id="edit-text-placement-banner" class="hidden flex items-center justify-between bg-indigo-900 px-4 py-2 text-xs font-semibold text-white shadow-sm z-30">
             <div class="flex items-center gap-2">
                 <span class="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Edit PDF Text Mode: Click any text section on the PDF to select and edit only that part in place, or use "Add Text Block" to insert new text. The rest of the PDF remains untouched.</span>
+                <span>Edit PDF Text Tool: Click on any text line or drag a box over a section to edit existing text in place. Only selected text will be modified; the rest of the document remains untouched.</span>
             </div>
-            <button id="btn-return-annotate" class="rounded bg-indigo-800 px-2.5 py-1 text-xs font-semibold text-indigo-100 hover:bg-indigo-700 hover:text-white transition-colors">Switch to Annotate Mode</button>
-        </div>
-
-        <!-- Edit PDF Text Mode Active Banner -->
-        <div id="mode-edit-text-banner" class="hidden flex items-center justify-between bg-indigo-900 px-4 py-2 text-xs font-semibold text-white shadow-sm z-30">
-            <div class="flex items-center gap-2">
-                <span class="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Edit PDF Text Mode: Click any text section on the PDF to select and edit only that part in place, or use "Add Text Block" to insert new text. The rest of the PDF remains untouched.</span>
-            </div>
-            <button id="btn-return-annotate" class="rounded bg-indigo-800 px-2.5 py-1 text-xs font-semibold text-indigo-100 hover:bg-indigo-700 hover:text-white transition-colors">Switch to Annotate Mode</button>
+            <button id="btn-cancel-edit-text-tool" class="rounded bg-indigo-800 px-2.5 py-1 text-xs font-semibold text-indigo-100 hover:bg-indigo-700 hover:text-white transition-colors">Done</button>
         </div>
 
         <!-- Main Workspace Area -->
@@ -429,7 +394,7 @@
         </div>
 
         <!-- Application Entry Module -->
-        <script type="module" src="/pdf-editor/js/pdf-editor.js?v=5"></script>
+        <script type="module" src="/pdf-editor/js/pdf-editor.js?v=6"></script>
     </body>
 </html>
 

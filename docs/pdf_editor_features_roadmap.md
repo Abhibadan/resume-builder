@@ -26,7 +26,7 @@ The standalone, full-featured web-based canvas PDF editor powered by **PDF.js** 
 | :--- | :--- | :---: | :--- |
 | **Multi-Page Rendering** | High-DPI rasterization of uploaded PDF pages with viewport scaling & virtualized DOM | `[Completed]` | PDF.js `page.render()` at 2× pixel ratio |
 | **Click-to-Place Text** | Click anywhere on the page canvas to drop an editable text box at that exact coordinate | `[Completed]` | Fabric.js `opt.scenePoint`, `IText` auto-focus & edit |
-| **Existing Text Editing** | Click/select a specific text section on the PDF to mask and edit only that part in place; rest of PDF remains untouched | `[Completed]` | On-demand targeted line activation + selective background masking & Fabric `IText` |
+| **Edit PDF Text Tool** | Tool in the unified toolbar; single click or marquee drag selects a specific part of text to mask and edit in place; rest of the PDF remains 100% untouched | `[Completed]` | Targeted line activation + selective background masking & Fabric `IText` |
 | **Freehand Pen Tool** | Smooth freehand ink drawing with color & width controls | `[Completed]` | Fabric.js `PencilBrush` on interactive layer |
 | **Highlighter Tool** | Semi-transparent yellow highlighter for highlighting text and sections | `[Completed]` | Fabric.js `PencilBrush` with RGBA alpha channel (45%) |
 | **Shapes & Vectors** | Insert Rectangle, Circle/Oval, Line, Arrow | `[Completed]` | Fabric.js `Rect`, `Circle`, `Line`, `Group` |

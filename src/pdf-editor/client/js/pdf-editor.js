@@ -10,10 +10,9 @@ const A4_HEIGHT = 841.89;
 const state = {
     pdfDoc: null,
     pdfBytes: null,
-    pages: [], // Array of { index, width, height, container, bgCanvas, fabricCanvas, isNew, textItems, isTextModeLoaded }
+    pages: [], // Array of { index, width, height, container, bgCanvas, fabricCanvas, isNew, textItems, lines }
     zoom: 1.0,
     activeTool: 'select',
-    editorMode: 'annotate', // 'annotate' | 'edit-text'
     activePageIndex: 0,
     signPlacement: null, // { pageIndex, x, y }
     showGrid: false,
@@ -44,16 +43,9 @@ const textPlacementBanner = document.getElementById('text-placement-banner');
 const btnCancelTextTool = document.getElementById('btn-cancel-text-tool');
 const btnAddTextCenter = document.getElementById('btn-add-text-center');
 
-// Mode Switcher Elements
-const modeAnnotateBtn = document.getElementById('mode-annotate-btn');
-const modeEditTextBtn = document.getElementById('mode-edit-text-btn');
-const toolsAnnotateGroup = document.getElementById('tools-annotate-group');
-const toolsTextModeGroup = document.getElementById('tools-text-mode-group');
-const modeEditTextBanner = document.getElementById('mode-edit-text-banner');
-const btnReturnAnnotate = document.getElementById('btn-return-annotate');
-const toolTextModeSelect = document.getElementById('tool-text-mode-select');
-const toolTextModeAdd = document.getElementById('tool-text-mode-add');
-const btnTextModeDelete = document.getElementById('btn-text-mode-delete');
+// Edit PDF Text Tool Banner Elements
+const editTextPlacementBanner = document.getElementById('edit-text-placement-banner');
+const btnCancelEditTextTool = document.getElementById('btn-cancel-edit-text-tool');
 
 function getCanvasPointer(opt, fCanvas) {
     if (opt.scenePoint) {
@@ -608,68 +600,6 @@ function activateTextLine(pageData, line) {
     return textObj;
 }
 
-function switchEditorMode(mode) {
-    state.editorMode = mode;
-
-    if (mode === 'edit-text') {
-        modeAnnotateBtn?.classList.remove('bg-white', 'text-indigo-700', 'shadow-xs');
-        modeAnnotateBtn?.classList.add('text-slate-600');
-        modeEditTextBtn?.classList.add('bg-white', 'text-indigo-700', 'shadow-xs');
-        modeEditTextBtn?.classList.remove('text-slate-600');
-
-        toolsAnnotateGroup?.classList.add('hidden');
-        toolsTextModeGroup?.classList.remove('hidden');
-        modeEditTextBanner?.classList.remove('hidden');
-        signPlacementBanner?.classList.add('hidden');
-        textPlacementBanner?.classList.add('hidden');
-
-        // Disable freehand drawing
-        state.pages.forEach((p) => {
-            if (p.fabricCanvas) p.fabricCanvas.isDrawingMode = false;
-        });
-
-        setActiveTool('select');
-    } else {
-        // Annotate mode
-        modeAnnotateBtn?.classList.add('bg-white', 'text-indigo-700', 'shadow-xs');
-        modeAnnotateBtn?.classList.remove('text-slate-600');
-        modeEditTextBtn?.classList.remove('bg-white', 'text-indigo-700', 'shadow-xs');
-        modeEditTextBtn?.classList.add('text-slate-600');
-
-        toolsAnnotateGroup?.classList.remove('hidden');
-        toolsTextModeGroup?.classList.add('hidden');
-        modeEditTextBanner?.classList.add('hidden');
-
-        setActiveTool('select');
-    }
-}
-
-function addTextModeBlock(pageIndex, x, y) {
-    const pageData = state.pages[pageIndex || state.activePageIndex || 0];
-    if (!pageData) return;
-    const canvas = pageData.fabricCanvas;
-    const posX = typeof x === 'number' ? x : canvas.width / 2 - 60;
-    const posY = typeof y === 'number' ? y : canvas.height / 3;
-
-    const textObj = new window.fabric.IText('New text', {
-        left: posX,
-        top: posY,
-        originX: 'left',
-        originY: 'top',
-        fontSize: 14,
-        fontFamily: 'Arial',
-        fill: '#000000',
-        backgroundColor: '#ffffff',
-        padding: 2,
-    });
-    canvas.add(textObj);
-    canvas.setActiveObject(textObj);
-    textObj.enterEditing();
-    textObj.selectAll();
-    canvas.renderAll();
-    setActiveTool('select');
-}
-
 function deleteSelectedObject() {
     const canvas = getActiveCanvas();
     if (!canvas || !state.selectedObject) return;
@@ -799,35 +729,15 @@ function bindFabricEvents(fCanvas, pageIndex) {
             return;
         }
 
-        // In Edit PDF Text Mode: user selects a part of the PDF by clicking or dragging a box
-        if (state.editorMode === 'edit-text' && state.activeTool === 'select') {
-            if (!opt.target) {
-                dragStart = { x: pointer.x, y: pointer.y };
-                fCanvas.selection = false;
+        // If Edit PDF Text tool is active: user selects a part of the PDF by clicking or dragging a box
+        if (state.activeTool === 'edit-text') {
+            if (opt.target && (opt.target.type === 'i-text' || opt.target.type === 'text')) {
+                fCanvas.setActiveObject(opt.target);
+                opt.target.enterEditing();
                 return;
             }
-        }
-
-        // If Text Mode Add is active, click anywhere to place a new text block
-        if (state.activeTool === 'text-mode-add') {
-            if (opt.target && (opt.target.type === 'i-text' || opt.target.type === 'text')) return;
-            const textObj = new window.fabric.IText('New text', {
-                left: Math.round(pointer.x),
-                top: Math.round(pointer.y),
-                originX: 'left',
-                originY: 'top',
-                fontFamily: 'Arial',
-                fontSize: 14,
-                fill: '#000000',
-                backgroundColor: '#ffffff',
-                padding: 2,
-            });
-            fCanvas.add(textObj);
-            fCanvas.setActiveObject(textObj);
-            textObj.enterEditing();
-            textObj.selectAll();
-            fCanvas.renderAll();
-            setActiveTool('select');
+            dragStart = { x: pointer.x, y: pointer.y };
+            fCanvas.selection = false;
             return;
         }
 
@@ -881,7 +791,7 @@ function bindFabricEvents(fCanvas, pageIndex) {
         const pointer = getCanvasPointer(opt, fCanvas);
         const pageData = state.pages[pageIndex];
 
-        if (state.editorMode === 'edit-text' && state.activeTool === 'select') {
+        if (state.activeTool === 'edit-text') {
             if (dragStart) {
                 const x = Math.min(dragStart.x, pointer.x);
                 const y = Math.min(dragStart.y, pointer.y);
@@ -917,7 +827,7 @@ function bindFabricEvents(fCanvas, pageIndex) {
     });
 
     fCanvas.on('mouse:up', (opt) => {
-        if (state.editorMode === 'edit-text' && dragStart) {
+        if (state.activeTool === 'edit-text' && dragStart) {
             const pointer = getCanvasPointer(opt, fCanvas);
             const pageData = state.pages[pageIndex];
             const x = Math.min(dragStart.x, pointer.x);
@@ -1020,13 +930,6 @@ function setActiveTool(tool) {
         btn.classList.toggle('btn-tool-active', btn.dataset.tool === tool);
     });
 
-    if (toolTextModeSelect) {
-        toolTextModeSelect.classList.toggle('btn-tool-active', tool === 'select');
-    }
-    if (toolTextModeAdd) {
-        toolTextModeAdd.classList.toggle('btn-tool-active', tool === 'text-mode-add');
-    }
-
     if (tool === 'sign') {
         signPlacementBanner.classList.remove('hidden');
     } else {
@@ -1039,9 +942,15 @@ function setActiveTool(tool) {
         textPlacementBanner?.classList.add('hidden');
     }
 
-    // Toggle freehand drawing mode across all page canvases (only in annotate mode)
+    if (tool === 'edit-text') {
+        editTextPlacementBanner?.classList.remove('hidden');
+    } else {
+        editTextPlacementBanner?.classList.add('hidden');
+    }
+
+    // Toggle freehand drawing mode across all page canvases
     state.pages.forEach((p) => {
-        const isDrawing = (tool === 'draw' || tool === 'highlighter') && state.editorMode === 'annotate';
+        const isDrawing = tool === 'draw' || tool === 'highlighter';
         p.fabricCanvas.isDrawingMode = isDrawing;
         if (isDrawing) {
             if (!p.fabricCanvas.freeDrawingBrush) {
@@ -1498,31 +1407,13 @@ function initApp() {
     toolButtons.forEach((btn) => {
         btn.addEventListener('click', () => {
             const tool = btn.dataset.tool;
-            if (tool === 'edit-text') {
-                switchEditorMode('edit-text');
-            } else if (tool === 'table') {
+            if (tool === 'table') {
                 tableModal.classList.remove('hidden');
             } else {
                 setActiveTool(tool);
             }
         });
     });
-
-    // Mode Switcher Buttons
-    modeAnnotateBtn?.addEventListener('click', () => switchEditorMode('annotate'));
-    modeEditTextBtn?.addEventListener('click', () => switchEditorMode('edit-text'));
-    btnReturnAnnotate?.addEventListener('click', () => switchEditorMode('annotate'));
-
-    // Edit Text Mode specific tool buttons
-    toolTextModeSelect?.addEventListener('click', () => setActiveTool('select'));
-    toolTextModeAdd?.addEventListener('click', () => {
-        if (state.activeTool === 'text-mode-add') {
-            addTextModeBlock();
-        } else {
-            setActiveTool('text-mode-add');
-        }
-    });
-    btnTextModeDelete?.addEventListener('click', deleteSelectedObject);
 
     // Shapes dropdown
     toolShapesBtn.addEventListener('click', (e) => {
@@ -1547,6 +1438,7 @@ function initApp() {
     btnOpenSignPadNow?.addEventListener('click', () => openSignatureModal());
     btnCancelTextTool?.addEventListener('click', () => setActiveTool('select'));
     btnAddTextCenter?.addEventListener('click', () => addText());
+    btnCancelEditTextTool?.addEventListener('click', () => setActiveTool('select'));
 
     // Context Property Bar Bindings
     propFontFamily.addEventListener('change', (e) => {
