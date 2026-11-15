@@ -6,15 +6,6 @@ const status = document.querySelector('#status');
 const warning = document.querySelector('#validation-warning');
 const pdfButton = document.querySelector('#download-pdf');
 const printButton = document.querySelector('#print');
-const maxProjectExperienceEntries = 6;
-
-function countProjectExperienceEntries() {
-    return resume.sections.reduce(
-        (count, section) =>
-            section.type === 'projects' || section.type === 'experience' ? count + section.items.length : count,
-        0,
-    );
-}
 
 const sectionLabels = {
     summary: 'Professional summary',
@@ -312,17 +303,8 @@ function layoutEditor() {
 
 function sectionEditor(section, sectionIndex) {
     const box = group(sectionLabels[section.type]);
-    const isProjectOrExperience = section.type === 'projects' || section.type === 'experience';
-    const combinedCount = isProjectOrExperience ? countProjectExperienceEntries() : 0;
-    if (isProjectOrExperience) {
-        const requirement = section.type === 'projects' ? ' At least one project must be visible.' : '';
-        box.append(
-            node(
-                'p',
-                `${combinedCount} / ${maxProjectExperienceEntries} entries across Projects and Experience, including hidden sections.${requirement}`,
-                'text-sm text-slate-600',
-            ),
-        );
+    if (section.type === 'projects') {
+        box.append(node('p', 'At least one project must be visible.', 'text-sm text-slate-600'));
     }
     const controls = grid(
         property(section, 'title', 'Section heading'),
@@ -397,7 +379,6 @@ function sectionEditor(section, sectionIndex) {
                 else section.items.push({ [itemFields[section.type][0][0]]: '' });
             }),
         );
-        addEntry.disabled = isProjectOrExperience && combinedCount >= maxProjectExperienceEntries;
         fieldControls.get(section).set('addEntry', { input: addEntry });
         box.append(addEntry);
     }
