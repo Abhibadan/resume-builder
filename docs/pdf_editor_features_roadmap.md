@@ -27,13 +27,13 @@ The standalone, full-featured web-based canvas PDF editor powered by **PDF.js** 
 | **Multi-Page Rendering** | High-DPI rasterization of uploaded PDF pages with viewport scaling & virtualized DOM | `[Completed]` | PDF.js `page.render()` at 2× pixel ratio |
 | **Click-to-Place Text** | Click anywhere on the page canvas to drop an editable text box at that exact coordinate | `[Completed]` | Fabric.js `opt.scenePoint`, `IText` auto-focus & edit |
 | **Edit PDF Text Tool** | Tool in the unified toolbar; single click or marquee drag selects a specific part of text to mask and edit in place; rest of the PDF remains 100% untouched | `[Completed]` | Targeted line activation + selective background masking & Fabric `IText` |
-| **Freehand Pen Tool** | Smooth freehand ink drawing with color & width controls | `[Completed]` | Fabric.js `PencilBrush` on interactive layer |
-| **Highlighter Tool** | Semi-transparent yellow highlighter for highlighting text and sections | `[Completed]` | Fabric.js `PencilBrush` with RGBA alpha channel (45%) |
+| **Freehand Pen Tool** | Smooth freehand ink drawing with color picker, 5 quick presets (black, blue, red, green, purple), and stroke width choices (1–10px) | `[Completed]` | Fabric.js `PencilBrush` with dynamic color & width controls |
+| **Highlighter Tool** | Semi-transparent highlighter with 6 glowing presets (yellow, green, blue, pink, orange, purple), custom color picker, and widths (10–36px) | `[Completed]` | Fabric.js `PencilBrush` with RGBA alpha channel (45%) |
 | **Shapes & Vectors** | Insert Rectangle, Circle/Oval, Line, Arrow | `[Completed]` | Fabric.js `Rect`, `Circle`, `Line`, `Group` |
 | **Whiteout / Eraser** | Opaque white shape to cover and redact existing text or artifacts | `[Completed]` | Fabric.js zero-stroke white `Rect` |
 | **Table & Grid Generator** | Modal to configure rows/columns and insert structured editable table cells | `[Completed]` | Fabric.js grouped cell rects & text inputs |
 | **Image Insertion** | Upload and place PNG, JPG, WebP images with free transform & scaling | `[Completed]` | Fabric.js `FabricImage.fromURL` |
-| **Typography & Styling** | Font family, size, bold, italic, underline, fill color, stroke color, layer ordering | `[Completed]` | Dynamic context property toolbar |
+| **Typography & Styling** | 45+ categorized fonts (Popular Sans, Modern Sans, Classic Serif, Monospace, Cursive), font size, bold, italic, underline, fill, stroke | `[Completed]` | Dynamic context property toolbar with categorized font selector |
 
 ---
 

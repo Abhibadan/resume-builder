@@ -14,6 +14,10 @@ const state = {
     zoom: 1.0,
     activeTool: 'select',
     activePageIndex: 0,
+    penColor: '#000000',
+    penWidth: 2,
+    highlighterColor: '#fde047',
+    highlighterWidth: 18,
     signPlacement: null, // { pageIndex, x, y }
     showGrid: false,
     selectedObject: null,
@@ -46,6 +50,32 @@ const btnAddTextCenter = document.getElementById('btn-add-text-center');
 // Edit PDF Text Tool Banner Elements
 const editTextPlacementBanner = document.getElementById('edit-text-placement-banner');
 const btnCancelEditTextTool = document.getElementById('btn-cancel-edit-text-tool');
+
+// Pen & Highlighter Controls DOM
+const propPenGroup = document.getElementById('prop-pen-group');
+const propPenColor = document.getElementById('prop-pen-color');
+const propPenWidth = document.getElementById('prop-pen-width');
+const propHighlighterGroup = document.getElementById('prop-highlighter-group');
+const propHighlighterColor = document.getElementById('prop-highlighter-color');
+const propHighlighterWidth = document.getElementById('prop-highlighter-width');
+
+function hexToRgba(hex, alpha = 0.45) {
+    if (!hex) return `rgba(254, 240, 138, ${alpha})`;
+    if (hex.startsWith('rgba')) return hex;
+    if (hex.startsWith('rgb')) {
+        return hex.replace('rgb', 'rgba').replace(')', `, ${alpha})`);
+    }
+    let c = hex.replace('#', '');
+    if (c.length === 3) {
+        c = c.split('').map((char) => char + char).join('');
+    }
+    const num = parseInt(c, 16);
+    if (Number.isNaN(num)) return `rgba(254, 240, 138, ${alpha})`;
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 function getCanvasPointer(opt, fCanvas) {
     if (opt.scenePoint) {
@@ -768,14 +798,18 @@ function bindFabricEvents(fCanvas, pageIndex) {
             }
 
             // Otherwise place brand new text with top-left right at clicked coordinate!
+            const fontFamily = propFontFamily?.value || 'Arial';
+            const fontSize = parseInt(propFontSize?.value, 10) || 14;
+            const fill = propTextColor?.value || '#000000';
+
             const textObj = new window.fabric.IText('Type text here', {
                 left: Math.round(pointer.x),
                 top: Math.round(pointer.y),
                 originX: 'left',
                 originY: 'top',
-                fontFamily: 'Arial',
-                fontSize: 14,
-                fill: '#000000',
+                fontFamily,
+                fontSize,
+                fill,
             });
             fCanvas.add(textObj);
             fCanvas.setActiveObject(textObj);
@@ -948,20 +982,37 @@ function setActiveTool(tool) {
         editTextPlacementBanner?.classList.add('hidden');
     }
 
+    if (tool === 'draw') {
+        propPenGroup?.classList.remove('hidden');
+    } else {
+        propPenGroup?.classList.add('hidden');
+    }
+
+    if (tool === 'highlighter') {
+        propHighlighterGroup?.classList.remove('hidden');
+    } else {
+        propHighlighterGroup?.classList.add('hidden');
+    }
+
     // Toggle freehand drawing mode across all page canvases
+    updateBrushSettings();
+}
+
+function updateBrushSettings() {
     state.pages.forEach((p) => {
-        const isDrawing = tool === 'draw' || tool === 'highlighter';
+        if (!p.fabricCanvas) return;
+        const isDrawing = state.activeTool === 'draw' || state.activeTool === 'highlighter';
         p.fabricCanvas.isDrawingMode = isDrawing;
         if (isDrawing) {
             if (!p.fabricCanvas.freeDrawingBrush) {
                 p.fabricCanvas.freeDrawingBrush = new window.fabric.PencilBrush(p.fabricCanvas);
             }
-            if (tool === 'draw') {
-                p.fabricCanvas.freeDrawingBrush.color = '#000000';
-                p.fabricCanvas.freeDrawingBrush.width = 2;
-            } else if (tool === 'highlighter') {
-                p.fabricCanvas.freeDrawingBrush.color = 'rgba(254, 240, 138, 0.45)'; // Semi-transparent yellow
-                p.fabricCanvas.freeDrawingBrush.width = 18;
+            if (state.activeTool === 'draw') {
+                p.fabricCanvas.freeDrawingBrush.color = state.penColor;
+                p.fabricCanvas.freeDrawingBrush.width = state.penWidth;
+            } else if (state.activeTool === 'highlighter') {
+                p.fabricCanvas.freeDrawingBrush.color = hexToRgba(state.highlighterColor, 0.45);
+                p.fabricCanvas.freeDrawingBrush.width = state.highlighterWidth;
             }
         }
     });
@@ -979,15 +1030,18 @@ function addText(x, y) {
 
     const posX = typeof x === 'number' ? x : canvas.width / 2 - 60;
     const posY = typeof y === 'number' ? y : canvas.height / 3;
+    const fontFamily = propFontFamily?.value || 'Arial';
+    const fontSize = parseInt(propFontSize?.value, 10) || 14;
+    const fill = propTextColor?.value || '#000000';
 
     const text = new window.fabric.IText('Type text here', {
         left: posX,
         top: posY,
         originX: 'left',
         originY: 'top',
-        fontFamily: 'Arial',
-        fontSize: 14,
-        fill: '#000000',
+        fontFamily,
+        fontSize,
+        fill,
     });
 
     canvas.add(text);
@@ -1439,6 +1493,70 @@ function initApp() {
     btnCancelTextTool?.addEventListener('click', () => setActiveTool('select'));
     btnAddTextCenter?.addEventListener('click', () => addText());
     btnCancelEditTextTool?.addEventListener('click', () => setActiveTool('select'));
+
+    // Freehand Pen Color & Width listeners
+    document.querySelectorAll('[data-pen-color]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const color = btn.dataset.penColor;
+            state.penColor = color;
+            if (propPenColor) propPenColor.value = color;
+            updateBrushSettings();
+            if (state.selectedObject && state.selectedObject.type === 'path') {
+                state.selectedObject.set('stroke', color);
+                getActiveCanvas()?.renderAll();
+            }
+        });
+    });
+
+    propPenColor?.addEventListener('input', (e) => {
+        state.penColor = e.target.value;
+        updateBrushSettings();
+        if (state.selectedObject && state.selectedObject.type === 'path') {
+            state.selectedObject.set('stroke', e.target.value);
+            getActiveCanvas()?.renderAll();
+        }
+    });
+
+    propPenWidth?.addEventListener('change', (e) => {
+        state.penWidth = parseInt(e.target.value, 10) || 2;
+        updateBrushSettings();
+        if (state.selectedObject && state.selectedObject.type === 'path') {
+            state.selectedObject.set('strokeWidth', state.penWidth);
+            getActiveCanvas()?.renderAll();
+        }
+    });
+
+    // Highlighter Color & Width listeners
+    document.querySelectorAll('[data-hl-color]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const color = btn.dataset.hlColor;
+            state.highlighterColor = color;
+            if (propHighlighterColor) propHighlighterColor.value = color;
+            updateBrushSettings();
+            if (state.selectedObject && state.selectedObject.type === 'path') {
+                state.selectedObject.set('stroke', hexToRgba(color, 0.45));
+                getActiveCanvas()?.renderAll();
+            }
+        });
+    });
+
+    propHighlighterColor?.addEventListener('input', (e) => {
+        state.highlighterColor = e.target.value;
+        updateBrushSettings();
+        if (state.selectedObject && state.selectedObject.type === 'path') {
+            state.selectedObject.set('stroke', hexToRgba(e.target.value, 0.45));
+            getActiveCanvas()?.renderAll();
+        }
+    });
+
+    propHighlighterWidth?.addEventListener('change', (e) => {
+        state.highlighterWidth = parseInt(e.target.value, 10) || 18;
+        updateBrushSettings();
+        if (state.selectedObject && state.selectedObject.type === 'path') {
+            state.selectedObject.set('strokeWidth', state.highlighterWidth);
+            getActiveCanvas()?.renderAll();
+        }
+    });
 
     // Context Property Bar Bindings
     propFontFamily.addEventListener('change', (e) => {

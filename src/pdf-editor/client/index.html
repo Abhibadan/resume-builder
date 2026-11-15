@@ -4,7 +4,7 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>PDF Document Studio & Sign</title>
-        <link rel="stylesheet" href="/pdf-editor/pdf-editor.css?v=6" />
+        <link rel="stylesheet" href="/pdf-editor/pdf-editor.css?v=7" />
         <script src="/pdf-editor/vendor/fabric.min.js"></script>
         <script src="/pdf-editor/vendor/pdf-lib.min.js"></script>
     </head>
@@ -135,17 +135,127 @@
                 </button>
             </div>
 
+            <!-- Freehand Pen Color & Width Toolbar (Visible when Pen tool is active) -->
+            <div id="prop-pen-group" class="hidden flex items-center gap-1.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg">
+                <span class="text-[11px] font-semibold text-slate-700 flex items-center gap-1">
+                    <svg class="h-3.5 w-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    Pen:
+                </span>
+                <!-- Quick Color Swatches -->
+                <div class="flex items-center gap-1">
+                    <button class="h-4.5 w-4.5 rounded-full border border-slate-300 bg-black hover:scale-110 transition-transform cursor-pointer" data-pen-color="#000000" title="Black"></button>
+                    <button class="h-4.5 w-4.5 rounded-full border border-slate-300 bg-blue-600 hover:scale-110 transition-transform cursor-pointer" data-pen-color="#2563eb" title="Blue"></button>
+                    <button class="h-4.5 w-4.5 rounded-full border border-slate-300 bg-red-600 hover:scale-110 transition-transform cursor-pointer" data-pen-color="#dc2626" title="Red"></button>
+                    <button class="h-4.5 w-4.5 rounded-full border border-slate-300 bg-emerald-600 hover:scale-110 transition-transform cursor-pointer" data-pen-color="#16a34a" title="Green"></button>
+                    <button class="h-4.5 w-4.5 rounded-full border border-slate-300 bg-purple-600 hover:scale-110 transition-transform cursor-pointer" data-pen-color="#9333ea" title="Purple"></button>
+                    <input id="prop-pen-color" type="color" value="#000000" class="h-5 w-5 cursor-pointer rounded-full border border-slate-200 p-0 bg-transparent" title="Custom Pen Color" />
+                </div>
+                <span class="mx-0.5 h-3.5 w-px bg-slate-200"></span>
+                <label class="flex items-center gap-1 text-[11px] text-slate-500">
+                    <span>Size:</span>
+                    <select id="prop-pen-width" class="h-6 rounded border border-slate-200 bg-white px-1 text-xs font-medium text-slate-700">
+                        <option value="1">1px (Thin)</option>
+                        <option value="2" selected>2px (Normal)</option>
+                        <option value="4">4px (Medium)</option>
+                        <option value="6">6px (Thick)</option>
+                        <option value="10">10px (Bold)</option>
+                    </select>
+                </label>
+            </div>
+
+            <!-- Highlighter Color & Width Toolbar (Visible when Highlighter tool is active) -->
+            <div id="prop-highlighter-group" class="hidden flex items-center gap-1.5 text-xs text-slate-700 bg-amber-50/70 border border-amber-200 px-2 py-1 rounded-lg">
+                <span class="text-[11px] font-semibold text-amber-900 flex items-center gap-1">
+                    <svg class="h-3.5 w-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
+                    Highlight:
+                </span>
+                <!-- Quick Highlighter Color Swatches -->
+                <div class="flex items-center gap-1">
+                    <button class="h-4.5 w-4.5 rounded-full border border-amber-300 bg-yellow-300 hover:scale-110 transition-transform cursor-pointer" data-hl-color="#fde047" title="Yellow"></button>
+                    <button class="h-4.5 w-4.5 rounded-full border border-emerald-300 bg-green-300 hover:scale-110 transition-transform cursor-pointer" data-hl-color="#4ade80" title="Neon Green"></button>
+                    <button class="h-4.5 w-4.5 rounded-full border border-sky-300 bg-sky-300 hover:scale-110 transition-transform cursor-pointer" data-hl-color="#38bdf8" title="Sky Blue"></button>
+                    <button class="h-4.5 w-4.5 rounded-full border border-pink-300 bg-pink-300 hover:scale-110 transition-transform cursor-pointer" data-hl-color="#f472b6" title="Pink"></button>
+                    <button class="h-4.5 w-4.5 rounded-full border border-orange-300 bg-orange-300 hover:scale-110 transition-transform cursor-pointer" data-hl-color="#fb923c" title="Orange"></button>
+                    <button class="h-4.5 w-4.5 rounded-full border border-purple-300 bg-purple-300 hover:scale-110 transition-transform cursor-pointer" data-hl-color="#c084fc" title="Purple"></button>
+                    <input id="prop-highlighter-color" type="color" value="#fde047" class="h-5 w-5 cursor-pointer rounded-full border border-amber-300 p-0 bg-transparent" title="Custom Highlighter Color" />
+                </div>
+                <span class="mx-0.5 h-3.5 w-px bg-amber-200"></span>
+                <label class="flex items-center gap-1 text-[11px] text-amber-900">
+                    <span>Width:</span>
+                    <select id="prop-highlighter-width" class="h-6 rounded border border-amber-200 bg-white px-1 text-xs font-medium text-slate-700">
+                        <option value="10">10px (Slim)</option>
+                        <option value="18" selected>18px (Standard)</option>
+                        <option value="26">26px (Wide)</option>
+                        <option value="36">36px (Jumbo)</option>
+                    </select>
+                </label>
+            </div>
+
             <!-- Dynamic Context Property Bar (shown when an element is selected) -->
             <div id="context-properties" class="hidden flex items-center gap-2 text-xs text-slate-700">
                 <!-- Text Formatting Group -->
                 <div id="prop-text-group" class="hidden flex items-center gap-1.5">
-                    <select id="prop-font-family" class="h-7 rounded border border-slate-200 bg-white px-2 text-xs font-medium text-slate-700">
-                        <option value="Arial">Arial</option>
-                        <option value="Times New Roman">Times New Roman</option>
-                        <option value="Courier New">Courier New</option>
-                        <option value="Georgia">Georgia</option>
-                        <option value="Verdana">Verdana</option>
-                        <option value="Helvetica">Helvetica</option>
+                    <select id="prop-font-family" class="h-7 rounded border border-slate-200 bg-white px-2 text-xs font-medium text-slate-700 max-w-[150px]">
+                        <optgroup label="Popular Sans-Serif">
+                            <option value="Arial" style="font-family: Arial;">Arial</option>
+                            <option value="Helvetica" style="font-family: Helvetica;">Helvetica</option>
+                            <option value="Calibri" style="font-family: Calibri;">Calibri</option>
+                            <option value="Segoe UI" style="font-family: 'Segoe UI';">Segoe UI</option>
+                            <option value="Trebuchet MS" style="font-family: 'Trebuchet MS';">Trebuchet MS</option>
+                            <option value="Verdana" style="font-family: Verdana;">Verdana</option>
+                            <option value="Tahoma" style="font-family: Tahoma;">Tahoma</option>
+                            <option value="Lucida Grande" style="font-family: 'Lucida Grande';">Lucida Grande</option>
+                            <option value="Futura" style="font-family: Futura;">Futura</option>
+                            <option value="Gill Sans" style="font-family: 'Gill Sans';">Gill Sans</option>
+                            <option value="Avenir" style="font-family: Avenir;">Avenir</option>
+                            <option value="Impact" style="font-family: Impact;">Impact</option>
+                        </optgroup>
+                        <optgroup label="Modern Sans">
+                            <option value="Inter" style="font-family: Inter, sans-serif;">Inter</option>
+                            <option value="Roboto" style="font-family: Roboto, sans-serif;">Roboto</option>
+                            <option value="Open Sans" style="font-family: 'Open Sans', sans-serif;">Open Sans</option>
+                            <option value="Lato" style="font-family: Lato, sans-serif;">Lato</option>
+                            <option value="Montserrat" style="font-family: Montserrat, sans-serif;">Montserrat</option>
+                            <option value="Poppins" style="font-family: Poppins, sans-serif;">Poppins</option>
+                            <option value="Source Sans Pro" style="font-family: 'Source Sans Pro', sans-serif;">Source Sans Pro</option>
+                            <option value="Nunito" style="font-family: Nunito, sans-serif;">Nunito</option>
+                            <option value="Raleway" style="font-family: Raleway, sans-serif;">Raleway</option>
+                            <option value="Ubuntu" style="font-family: Ubuntu, sans-serif;">Ubuntu</option>
+                        </optgroup>
+                        <optgroup label="Classic Serif">
+                            <option value="Times New Roman" style="font-family: 'Times New Roman';">Times New Roman</option>
+                            <option value="Georgia" style="font-family: Georgia;">Georgia</option>
+                            <option value="Garamond" style="font-family: Garamond;">Garamond</option>
+                            <option value="Cambria" style="font-family: Cambria;">Cambria</option>
+                            <option value="Palatino" style="font-family: 'Palatino Linotype', Palatino;">Palatino</option>
+                            <option value="Baskerville" style="font-family: Baskerville;">Baskerville</option>
+                            <option value="Book Antiqua" style="font-family: 'Book Antiqua';">Book Antiqua</option>
+                            <option value="Didot" style="font-family: Didot;">Didot</option>
+                            <option value="Merriweather" style="font-family: Merriweather, serif;">Merriweather</option>
+                            <option value="Playfair Display" style="font-family: 'Playfair Display', serif;">Playfair Display</option>
+                            <option value="Lora" style="font-family: Lora, serif;">Lora</option>
+                            <option value="PT Serif" style="font-family: 'PT Serif', serif;">PT Serif</option>
+                        </optgroup>
+                        <optgroup label="Monospace / Code">
+                            <option value="Courier New" style="font-family: 'Courier New';">Courier New</option>
+                            <option value="Consolas" style="font-family: Consolas;">Consolas</option>
+                            <option value="Monaco" style="font-family: Monaco;">Monaco</option>
+                            <option value="Menlo" style="font-family: Menlo;">Menlo</option>
+                            <option value="Lucida Console" style="font-family: 'Lucida Console';">Lucida Console</option>
+                            <option value="SFMono-Regular" style="font-family: 'SFMono-Regular';">SF Mono</option>
+                            <option value="Roboto Mono" style="font-family: 'Roboto Mono', monospace;">Roboto Mono</option>
+                            <option value="Fira Code" style="font-family: 'Fira Code', monospace;">Fira Code</option>
+                        </optgroup>
+                        <optgroup label="Handwriting & Cursive">
+                            <option value="Comic Sans MS" style="font-family: 'Comic Sans MS';">Comic Sans MS</option>
+                            <option value="Brush Script MT" style="font-family: 'Brush Script MT', cursive;">Brush Script MT</option>
+                            <option value="Bradley Hand" style="font-family: 'Bradley Hand', cursive;">Bradley Hand</option>
+                            <option value="Caveat" style="font-family: Caveat, cursive;">Caveat</option>
+                            <option value="Dancing Script" style="font-family: 'Dancing Script', cursive;">Dancing Script</option>
+                            <option value="Pacifico" style="font-family: Pacifico, cursive;">Pacifico</option>
+                            <option value="Copperplate" style="font-family: Copperplate;">Copperplate</option>
+                            <option value="Papyrus" style="font-family: Papyrus;">Papyrus</option>
+                        </optgroup>
                     </select>
 
                     <input id="prop-font-size" type="number" min="6" max="120" value="14" class="h-7 w-14 rounded border border-slate-200 bg-white px-1.5 text-center text-xs font-medium" title="Font Size (pt)" />
@@ -394,7 +504,7 @@
         </div>
 
         <!-- Application Entry Module -->
-        <script type="module" src="/pdf-editor/js/pdf-editor.js?v=6"></script>
+        <script type="module" src="/pdf-editor/js/pdf-editor.js?v=7"></script>
     </body>
 </html>
 
