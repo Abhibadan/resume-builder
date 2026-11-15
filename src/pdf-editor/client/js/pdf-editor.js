@@ -10,9 +10,10 @@ const A4_HEIGHT = 841.89;
 const state = {
     pdfDoc: null,
     pdfBytes: null,
-    pages: [], // Array of { index, width, height, container, bgCanvas, fabricCanvas, isNew }
+    pages: [], // Array of { index, width, height, container, bgCanvas, fabricCanvas, isNew, textItems, isTextModeLoaded }
     zoom: 1.0,
     activeTool: 'select',
+    editorMode: 'annotate', // 'annotate' | 'edit-text'
     activePageIndex: 0,
     signPlacement: null, // { pageIndex, x, y }
     showGrid: false,
@@ -42,6 +43,17 @@ const btnOpenSignPadNow = document.getElementById('btn-open-sign-pad-now');
 const textPlacementBanner = document.getElementById('text-placement-banner');
 const btnCancelTextTool = document.getElementById('btn-cancel-text-tool');
 const btnAddTextCenter = document.getElementById('btn-add-text-center');
+
+// Mode Switcher Elements
+const modeAnnotateBtn = document.getElementById('mode-annotate-btn');
+const modeEditTextBtn = document.getElementById('mode-edit-text-btn');
+const toolsAnnotateGroup = document.getElementById('tools-annotate-group');
+const toolsTextModeGroup = document.getElementById('tools-text-mode-group');
+const modeEditTextBanner = document.getElementById('mode-edit-text-banner');
+const btnReturnAnnotate = document.getElementById('btn-return-annotate');
+const toolTextModeSelect = document.getElementById('tool-text-mode-select');
+const toolTextModeAdd = document.getElementById('tool-text-mode-add');
+const btnTextModeDelete = document.getElementById('btn-text-mode-delete');
 
 function getCanvasPointer(opt, fCanvas) {
     if (opt.scenePoint) {
@@ -390,7 +402,7 @@ async function createPageElement(pageNum) {
     };
     await page.render(renderContext).promise;
 
-    // Extract text items from PDF.js for click-to-edit
+    // Extract text items from PDF.js for click-to-edit and Edit PDF Text Mode
     const textItems = [];
     try {
         const textContent = await page.getTextContent();
@@ -400,14 +412,30 @@ async function createPageElement(pageNum) {
             const ty = item.transform[5];
             const [vx, vy] = viewport.convertToViewportPoint(tx, ty);
             const fontSize = Math.hypot(item.transform[2], item.transform[3]) || item.height || 12;
+            const fontName = item.fontName || '';
+            const style = textContent.styles && textContent.styles[fontName];
+            const isBold = /bold/i.test(fontName) || (style && /bold/i.test(style.fontFamily));
+            const isItalic = /italic|oblique/i.test(fontName) || (style && /italic|oblique/i.test(style.fontFamily));
+            let fontFamily = 'Arial';
+            if (/times/i.test(fontName) || (style && /times|serif/i.test(style.fontFamily))) {
+                fontFamily = 'Times New Roman';
+            } else if (/courier|mono/i.test(fontName) || (style && /mono/i.test(style.fontFamily))) {
+                fontFamily = 'Courier New';
+            } else if (/georgia/i.test(fontName)) {
+                fontFamily = 'Georgia';
+            }
+
             textItems.push({
                 str: item.str,
                 x: Math.round(vx),
-                y: Math.round(Math.max(0, vy - fontSize)),
+                y: Math.round(Math.max(0, vy - fontSize * 0.85)),
                 width: Math.round(item.width),
-                height: Math.round(Math.max(14, fontSize * 1.25)),
+                height: Math.round(Math.max(12, fontSize * 1.15)),
                 fontSize: Math.max(8, Math.round(fontSize)),
-                fontName: item.fontName,
+                fontFamily,
+                fontWeight: isBold ? 'bold' : 'normal',
+                fontStyle: isItalic ? 'italic' : 'normal',
+                fill: '#000000',
             });
         }
     } catch (e) {
@@ -434,6 +462,8 @@ async function createPageElement(pageNum) {
         preserveObjectStacking: true,
     });
 
+    const lines = groupTextItemsIntoLines(textItems);
+
     const pageData = {
         index: pageIndex,
         width,
@@ -443,67 +473,228 @@ async function createPageElement(pageNum) {
         fabricCanvas,
         isNew: false,
         textItems,
-        textMadeEditable: false,
+        lines,
     };
 
     state.pages.push(pageData);
     bindFabricEvents(fabricCanvas, pageIndex);
 }
 
-function makePageTextEditable(pageIndex) {
-    const pageData = state.pages[pageIndex] || state.pages[0];
-    if (!pageData || !pageData.textItems || pageData.textItems.length === 0) {
-        alert('No text detected on Page ' + ((pageIndex || 0) + 1));
-        return;
-    }
-    const canvas = pageData.fabricCanvas;
-    if (pageData.textMadeEditable) {
-        alert('Existing text on Page ' + (pageData.index + 1) + ' is already editable! Click on any text box to modify it.');
-        return;
-    }
-
-    // Group adjacent items on the same line to form coherent editable sentences
-    const rawItems = [...pageData.textItems].sort((a, b) => (Math.abs(a.y - b.y) < 4 ? a.x - b.x : a.y - b.y));
-    const lines = [];
-    let currentLine = null;
-
-    for (const item of rawItems) {
-        if (!currentLine) {
-            currentLine = { ...item };
-            continue;
+function groupTextItemsIntoLines(items) {
+    if (!items || items.length === 0) return [];
+    const sorted = [...items].sort((a, b) => {
+        if (Math.abs(a.y - b.y) <= 3) {
+            return a.x - b.x;
         }
-        const sameLine = Math.abs(currentLine.y - item.y) <= 5;
-        const adjacent = item.x >= currentLine.x && (item.x - (currentLine.x + currentLine.width)) <= Math.max(20, item.fontSize * 1.6);
-        if (sameLine && adjacent) {
-            currentLine.str += (currentLine.str.endsWith(' ') || item.str.startsWith(' ') ? '' : ' ') + item.str;
-            currentLine.width = (item.x + item.width) - currentLine.x;
-            currentLine.height = Math.max(currentLine.height, item.height);
-        } else {
-            lines.push(currentLine);
-            currentLine = { ...item };
-        }
-    }
-    if (currentLine) lines.push(currentLine);
-
-    lines.forEach((line) => {
-        const textObj = new window.fabric.IText(line.str, {
-            left: Math.round(line.x),
-            top: Math.round(line.y),
-            originX: 'left',
-            originY: 'top',
-            fontSize: line.fontSize,
-            fontFamily: 'Arial',
-            fill: '#000000',
-            backgroundColor: '#ffffff',
-            padding: 1,
-        });
-        canvas.add(textObj);
+        return a.y - b.y;
     });
 
-    pageData.textMadeEditable = true;
+    const lines = [];
+    let current = null;
+
+    for (const item of sorted) {
+        if (!current) {
+            current = { ...item };
+            continue;
+        }
+
+        const sameY = Math.abs(current.y - item.y) <= 4;
+        const currentRight = current.x + current.width;
+        const gap = item.x - currentRight;
+        const maxGap = Math.max(16, current.fontSize * 1.6);
+        const isAdjacent = gap >= -4 && gap <= maxGap;
+        const sameStyle = current.fontWeight === item.fontWeight && current.fontStyle === item.fontStyle;
+
+        if (sameY && isAdjacent && sameStyle) {
+            const needSpace = !current.str.endsWith(' ') && !item.str.startsWith(' ') && gap > 1;
+            current.str += (needSpace ? ' ' : '') + item.str;
+            current.width = (item.x + item.width) - current.x;
+            current.height = Math.max(current.height, item.height);
+        } else {
+            lines.push(current);
+            current = { ...item };
+        }
+    }
+    if (current) lines.push(current);
+
+    return lines;
+}
+
+function findTextLineAt(lines, px, py) {
+    if (!lines || lines.length === 0) return null;
+    let closestLine = null;
+    let minDistance = Infinity;
+
+    for (const line of lines) {
+        if (line.isActivated) continue;
+        const withinX = px >= line.x - 6 && px <= line.x + line.width + 6;
+        const withinY = py >= line.y - 4 && py <= line.y + line.height + 4;
+        if (withinX && withinY) {
+            const centerY = line.y + line.height / 2;
+            const dist = Math.abs(centerY - py);
+            if (dist < minDistance) {
+                minDistance = dist;
+                closestLine = line;
+            }
+        }
+    }
+    return closestLine;
+}
+
+function activateTextLine(pageData, line) {
+    if (!pageData || !line || line.isActivated) return null;
+    const canvas = pageData.fabricCanvas;
+    const bgCanvas = pageData.bgCanvas;
+    if (!canvas || !bgCanvas) return null;
+
+    const bgCtx = bgCanvas.getContext('2d');
+
+    // 1. Mask ONLY this specific line on the background canvas (2x multiplier)
+    const padX = 2;
+    const padY = 1;
+    const maskLeft = Math.max(0, (line.x - padX) * 2);
+    const maskTop = Math.max(0, (line.y - padY) * 2);
+    const maskW = (line.width + padX * 2) * 2;
+    const maskH = (line.height + padY * 2) * 2;
+
+    bgCtx.fillStyle = '#ffffff';
+    bgCtx.fillRect(maskLeft, maskTop, maskW, maskH);
+
+    // 2. Whiteout mask Rect on Fabric canvas so export permanently covers this original text
+    const maskRect = new window.fabric.Rect({
+        left: line.x - padX,
+        top: line.y - padY,
+        width: line.width + padX * 2,
+        height: line.height + padY * 2,
+        fill: '#ffffff',
+        selectable: false,
+        evented: false,
+        originX: 'left',
+        originY: 'top',
+    });
+    canvas.add(maskRect);
+
+    // 3. Live editable IText object for ONLY this selected part
+    const textObj = new window.fabric.IText(line.str, {
+        left: line.x,
+        top: line.y,
+        originX: 'left',
+        originY: 'top',
+        fontSize: line.fontSize,
+        fontFamily: line.fontFamily || 'Arial',
+        fontWeight: line.fontWeight || 'normal',
+        fontStyle: line.fontStyle || 'normal',
+        fill: line.fill || '#000000',
+        backgroundColor: '#ffffff',
+        padding: 2,
+        isOriginalText: true,
+        maskRectRef: maskRect,
+        originalBBox: {
+            x: line.x - padX,
+            y: line.y - padY,
+            width: line.width + padX * 2,
+            height: line.height + padY * 2,
+        },
+    });
+
+    line.isActivated = true;
+    line.fabricObject = textObj;
+
+    canvas.add(textObj);
+    canvas.setActiveObject(textObj);
+    textObj.enterEditing();
+    canvas.renderAll();
+
+    return textObj;
+}
+
+function switchEditorMode(mode) {
+    state.editorMode = mode;
+
+    if (mode === 'edit-text') {
+        modeAnnotateBtn?.classList.remove('bg-white', 'text-indigo-700', 'shadow-xs');
+        modeAnnotateBtn?.classList.add('text-slate-600');
+        modeEditTextBtn?.classList.add('bg-white', 'text-indigo-700', 'shadow-xs');
+        modeEditTextBtn?.classList.remove('text-slate-600');
+
+        toolsAnnotateGroup?.classList.add('hidden');
+        toolsTextModeGroup?.classList.remove('hidden');
+        modeEditTextBanner?.classList.remove('hidden');
+        signPlacementBanner?.classList.add('hidden');
+        textPlacementBanner?.classList.add('hidden');
+
+        // Disable freehand drawing
+        state.pages.forEach((p) => {
+            if (p.fabricCanvas) p.fabricCanvas.isDrawingMode = false;
+        });
+
+        setActiveTool('select');
+    } else {
+        // Annotate mode
+        modeAnnotateBtn?.classList.add('bg-white', 'text-indigo-700', 'shadow-xs');
+        modeAnnotateBtn?.classList.remove('text-slate-600');
+        modeEditTextBtn?.classList.remove('bg-white', 'text-indigo-700', 'shadow-xs');
+        modeEditTextBtn?.classList.add('text-slate-600');
+
+        toolsAnnotateGroup?.classList.remove('hidden');
+        toolsTextModeGroup?.classList.add('hidden');
+        modeEditTextBanner?.classList.add('hidden');
+
+        setActiveTool('select');
+    }
+}
+
+function addTextModeBlock(pageIndex, x, y) {
+    const pageData = state.pages[pageIndex || state.activePageIndex || 0];
+    if (!pageData) return;
+    const canvas = pageData.fabricCanvas;
+    const posX = typeof x === 'number' ? x : canvas.width / 2 - 60;
+    const posY = typeof y === 'number' ? y : canvas.height / 3;
+
+    const textObj = new window.fabric.IText('New text', {
+        left: posX,
+        top: posY,
+        originX: 'left',
+        originY: 'top',
+        fontSize: 14,
+        fontFamily: 'Arial',
+        fill: '#000000',
+        backgroundColor: '#ffffff',
+        padding: 2,
+    });
+    canvas.add(textObj);
+    canvas.setActiveObject(textObj);
+    textObj.enterEditing();
+    textObj.selectAll();
     canvas.renderAll();
     setActiveTool('select');
-    alert(`Converted ${lines.length} text lines on Page ${pageData.index + 1} into editable text boxes! Click on any line to edit text.`);
+}
+
+function deleteSelectedObject() {
+    const canvas = getActiveCanvas();
+    if (!canvas || !state.selectedObject) return;
+    const obj = state.selectedObject;
+
+    if (obj.isOriginalText && obj.originalBBox) {
+        if (!obj.maskRectRef) {
+            const mask = new window.fabric.Rect({
+                left: obj.originalBBox.x,
+                top: obj.originalBBox.y,
+                width: obj.originalBBox.width,
+                height: obj.originalBBox.height,
+                fill: '#ffffff',
+                selectable: false,
+                evented: false,
+                originX: 'left',
+                originY: 'top',
+            });
+            canvas.add(mask);
+            canvas.sendObjectToBack(mask);
+        }
+    }
+    canvas.remove(obj);
+    onSelectionCleared();
+    canvas.renderAll();
 }
 
 function appendBlankPage() {
@@ -590,6 +781,9 @@ function deletePage(pageIndex) {
 // 4. Fabric.js Canvas Event Binding & Tools Interaction
 // ---------------------------------------------------------------------------
 function bindFabricEvents(fCanvas, pageIndex) {
+    let dragMarqueeEl = null;
+    let dragStart = null;
+
     fCanvas.on('mouse:down', (opt) => {
         state.activePageIndex = pageIndex;
         const pointer = getCanvasPointer(opt, fCanvas);
@@ -602,6 +796,38 @@ function bindFabricEvents(fCanvas, pageIndex) {
                 y: pointer.y,
             };
             openSignatureModal();
+            return;
+        }
+
+        // In Edit PDF Text Mode: user selects a part of the PDF by clicking or dragging a box
+        if (state.editorMode === 'edit-text' && state.activeTool === 'select') {
+            if (!opt.target) {
+                dragStart = { x: pointer.x, y: pointer.y };
+                fCanvas.selection = false;
+                return;
+            }
+        }
+
+        // If Text Mode Add is active, click anywhere to place a new text block
+        if (state.activeTool === 'text-mode-add') {
+            if (opt.target && (opt.target.type === 'i-text' || opt.target.type === 'text')) return;
+            const textObj = new window.fabric.IText('New text', {
+                left: Math.round(pointer.x),
+                top: Math.round(pointer.y),
+                originX: 'left',
+                originY: 'top',
+                fontFamily: 'Arial',
+                fontSize: 14,
+                fill: '#000000',
+                backgroundColor: '#ffffff',
+                padding: 2,
+            });
+            fCanvas.add(textObj);
+            fCanvas.setActiveObject(textObj);
+            textObj.enterEditing();
+            textObj.selectAll();
+            fCanvas.renderAll();
+            setActiveTool('select');
             return;
         }
 
@@ -648,6 +874,97 @@ function bindFabricEvents(fCanvas, pageIndex) {
             fCanvas.renderAll();
             setActiveTool('select');
             return;
+        }
+    });
+
+    fCanvas.on('mouse:move', (opt) => {
+        const pointer = getCanvasPointer(opt, fCanvas);
+        const pageData = state.pages[pageIndex];
+
+        if (state.editorMode === 'edit-text' && state.activeTool === 'select') {
+            if (dragStart) {
+                const x = Math.min(dragStart.x, pointer.x);
+                const y = Math.min(dragStart.y, pointer.y);
+                const w = Math.abs(pointer.x - dragStart.x);
+                const h = Math.abs(pointer.y - dragStart.y);
+
+                if (w > 4 || h > 4) {
+                    if (!dragMarqueeEl && pageData && pageData.container) {
+                        dragMarqueeEl = document.createElement('div');
+                        dragMarqueeEl.className = 'absolute border-2 border-indigo-600 bg-indigo-500/15 pointer-events-none rounded-xs z-30 transition-none shadow-xs';
+                        pageData.container.appendChild(dragMarqueeEl);
+                    }
+                    if (dragMarqueeEl) {
+                        dragMarqueeEl.style.left = `${x}px`;
+                        dragMarqueeEl.style.top = `${y}px`;
+                        dragMarqueeEl.style.width = `${w}px`;
+                        dragMarqueeEl.style.height = `${h}px`;
+                    }
+                }
+                return;
+            }
+
+            // Hover indicator over unactivated text
+            if (!opt.target && pageData && pageData.lines) {
+                const line = findTextLineAt(pageData.lines, pointer.x, pointer.y);
+                if (line) {
+                    fCanvas.defaultCursor = 'text';
+                    return;
+                }
+            }
+            fCanvas.defaultCursor = 'default';
+        }
+    });
+
+    fCanvas.on('mouse:up', (opt) => {
+        if (state.editorMode === 'edit-text' && dragStart) {
+            const pointer = getCanvasPointer(opt, fCanvas);
+            const pageData = state.pages[pageIndex];
+            const x = Math.min(dragStart.x, pointer.x);
+            const y = Math.min(dragStart.y, pointer.y);
+            const w = Math.abs(pointer.x - dragStart.x);
+            const h = Math.abs(pointer.y - dragStart.y);
+
+            if (dragMarqueeEl) {
+                dragMarqueeEl.remove();
+                dragMarqueeEl = null;
+            }
+
+            if (w > 6 || h > 6) {
+                // Dragged a selection box over a part of the PDF!
+                if (pageData && pageData.lines) {
+                    const selectedLines = pageData.lines.filter((line) => {
+                        if (line.isActivated) return false;
+                        return (
+                            line.x + line.width >= x &&
+                            line.x <= x + w &&
+                            line.y + line.height >= y &&
+                            line.y <= y + h
+                        );
+                    });
+
+                    if (selectedLines.length > 0) {
+                        selectedLines.forEach((line) => activateTextLine(pageData, line, false));
+                        if (selectedLines.length === 1) {
+                            fCanvas.setActiveObject(selectedLines[0].fabricObject);
+                            selectedLines[0].fabricObject.enterEditing();
+                        }
+                        fCanvas.renderAll();
+                    }
+                }
+            } else {
+                // Single click selection on a specific text line
+                if (pageData && pageData.lines) {
+                    const line = findTextLineAt(pageData.lines, pointer.x, pointer.y);
+                    if (line) {
+                        activateTextLine(pageData, line, true);
+                        fCanvas.renderAll();
+                    }
+                }
+            }
+
+            dragStart = null;
+            fCanvas.selection = true;
         }
     });
 
@@ -703,6 +1020,13 @@ function setActiveTool(tool) {
         btn.classList.toggle('btn-tool-active', btn.dataset.tool === tool);
     });
 
+    if (toolTextModeSelect) {
+        toolTextModeSelect.classList.toggle('btn-tool-active', tool === 'select');
+    }
+    if (toolTextModeAdd) {
+        toolTextModeAdd.classList.toggle('btn-tool-active', tool === 'text-mode-add');
+    }
+
     if (tool === 'sign') {
         signPlacementBanner.classList.remove('hidden');
     } else {
@@ -715,9 +1039,9 @@ function setActiveTool(tool) {
         textPlacementBanner?.classList.add('hidden');
     }
 
-    // Toggle freehand drawing mode across all page canvases
+    // Toggle freehand drawing mode across all page canvases (only in annotate mode)
     state.pages.forEach((p) => {
-        const isDrawing = tool === 'draw' || tool === 'highlighter';
+        const isDrawing = (tool === 'draw' || tool === 'highlighter') && state.editorMode === 'annotate';
         p.fabricCanvas.isDrawingMode = isDrawing;
         if (isDrawing) {
             if (!p.fabricCanvas.freeDrawingBrush) {
@@ -1095,6 +1419,10 @@ async function exportPdfDocument() {
                 pdfPage = targetPdfDoc.getPage(i);
             }
 
+            // Deselect any active object so selection handles / borders are not baked into export
+            pageData.fabricCanvas.discardActiveObject();
+            pageData.fabricCanvas.renderAll();
+
             // High-resolution overlay render (2x multiplier)
             const overlayPngUrl = pageData.fabricCanvas.toDataURL({
                 format: 'png',
@@ -1171,7 +1499,7 @@ function initApp() {
         btn.addEventListener('click', () => {
             const tool = btn.dataset.tool;
             if (tool === 'edit-text') {
-                makePageTextEditable(state.activePageIndex);
+                switchEditorMode('edit-text');
             } else if (tool === 'table') {
                 tableModal.classList.remove('hidden');
             } else {
@@ -1179,6 +1507,22 @@ function initApp() {
             }
         });
     });
+
+    // Mode Switcher Buttons
+    modeAnnotateBtn?.addEventListener('click', () => switchEditorMode('annotate'));
+    modeEditTextBtn?.addEventListener('click', () => switchEditorMode('edit-text'));
+    btnReturnAnnotate?.addEventListener('click', () => switchEditorMode('annotate'));
+
+    // Edit Text Mode specific tool buttons
+    toolTextModeSelect?.addEventListener('click', () => setActiveTool('select'));
+    toolTextModeAdd?.addEventListener('click', () => {
+        if (state.activeTool === 'text-mode-add') {
+            addTextModeBlock();
+        } else {
+            setActiveTool('text-mode-add');
+        }
+    });
+    btnTextModeDelete?.addEventListener('click', deleteSelectedObject);
 
     // Shapes dropdown
     toolShapesBtn.addEventListener('click', (e) => {
@@ -1288,20 +1632,12 @@ function initApp() {
         }
     });
 
-    propDelete.addEventListener('click', () => {
-        if (state.selectedObject) {
-            getActiveCanvas().remove(state.selectedObject);
-            onSelectionCleared();
-            getActiveCanvas().renderAll();
-        }
-    });
+    propDelete.addEventListener('click', deleteSelectedObject);
 
     // Delete key shortcut
     window.addEventListener('keydown', (e) => {
         if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedObject && !state.selectedObject.isEditing) {
-            getActiveCanvas().remove(state.selectedObject);
-            onSelectionCleared();
-            getActiveCanvas().renderAll();
+            deleteSelectedObject();
         }
     });
 
