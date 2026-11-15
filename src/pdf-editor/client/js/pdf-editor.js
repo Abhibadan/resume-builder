@@ -59,6 +59,153 @@ const propHighlighterGroup = document.getElementById('prop-highlighter-group');
 const propHighlighterColor = document.getElementById('prop-highlighter-color');
 const propHighlighterWidth = document.getElementById('prop-highlighter-width');
 
+// History Undo / Redo DOM Elements
+const btnUndo = document.getElementById('btn-undo');
+const btnRedo = document.getElementById('btn-redo');
+
+// ---------------------------------------------------------------------------
+// 0. Doubly Linked List History Engine (Undo / Redo Architecture)
+// ---------------------------------------------------------------------------
+class HistoryNode {
+    constructor(action) {
+        this.action = action; // { pageIndex, undo(), redo(), description }
+        this.prev = null;
+        this.next = null;
+    }
+}
+
+class HistoryManager {
+    constructor(maxSize = 50) {
+        this.head = null;
+        this.tail = null;
+        this.current = null;
+        this.size = 0;
+        this.maxSize = maxSize;
+        this.isExecuting = false;
+    }
+
+    push(action) {
+        if (this.isExecuting) return;
+
+        const node = new HistoryNode(action);
+
+        if (!this.current) {
+            // First action in history
+            this.head = node;
+            this.tail = node;
+            this.current = node;
+            this.size = 1;
+        } else {
+            // Truncate forward redo branch (replace next with new node)
+            this.current.next = node;
+            node.prev = this.current;
+            this.current = node;
+            this.tail = node;
+
+            // Recalculate size from head to current
+            let count = 0;
+            let temp = this.head;
+            while (temp) {
+                count++;
+                if (temp === this.current) break;
+                temp = temp.next;
+            }
+            this.size = count;
+
+            // Cap at maxSize by advancing head pointer
+            while (this.size > this.maxSize && this.head && this.head !== this.current) {
+                this.head = this.head.next;
+                if (this.head) this.head.prev = null;
+                this.size--;
+            }
+        }
+
+        this.updateUI();
+    }
+
+    canUndo() {
+        return this.current !== null;
+    }
+
+    canRedo() {
+        return this.current ? this.current.next !== null : this.head !== null;
+    }
+
+    undo() {
+        if (!this.canUndo() || this.isExecuting) return false;
+
+        this.isExecuting = true;
+        try {
+            const action = this.current.action;
+            if (typeof action.pageIndex === 'number' && state.pages[action.pageIndex]) {
+                state.activePageIndex = action.pageIndex;
+            }
+
+            action.undo();
+
+            // Advance pointer backward
+            this.current = this.current.prev;
+        } catch (err) {
+            console.error('Undo operation failed:', err);
+        } finally {
+            this.isExecuting = false;
+            this.updateUI();
+        }
+        return true;
+    }
+
+    redo() {
+        if (!this.canRedo() || this.isExecuting) return false;
+
+        this.isExecuting = true;
+        try {
+            const nodeToRedo = this.current ? this.current.next : this.head;
+            if (!nodeToRedo) return false;
+
+            const action = nodeToRedo.action;
+            if (typeof action.pageIndex === 'number' && state.pages[action.pageIndex]) {
+                state.activePageIndex = action.pageIndex;
+            }
+
+            action.redo();
+
+            // Advance pointer forward
+            this.current = nodeToRedo;
+        } catch (err) {
+            console.error('Redo operation failed:', err);
+        } finally {
+            this.isExecuting = false;
+            this.updateUI();
+        }
+        return true;
+    }
+
+    clear() {
+        this.head = null;
+        this.tail = null;
+        this.current = null;
+        this.size = 0;
+        this.updateUI();
+    }
+
+    updateUI() {
+        const canU = this.canUndo();
+        const canR = this.canRedo();
+        if (btnUndo) {
+            btnUndo.disabled = !canU;
+            btnUndo.classList.toggle('opacity-40', !canU);
+            btnUndo.classList.toggle('cursor-not-allowed', !canU);
+        }
+        if (btnRedo) {
+            btnRedo.disabled = !canR;
+            btnRedo.classList.toggle('opacity-40', !canR);
+            btnRedo.classList.toggle('cursor-not-allowed', !canR);
+        }
+    }
+}
+
+const historyManager = new HistoryManager(50);
+
 function hexToRgba(hex, alpha = 0.45) {
     if (!hex) return `rgba(254, 240, 138, ${alpha})`;
     if (hex.startsWith('rgba')) return hex;
@@ -347,6 +494,7 @@ function updateUploadedSigPreview() {
 // 3. Document Loader & Multi-Page Viewport Coordinator
 // ---------------------------------------------------------------------------
 async function loadPdfBuffer(buffer, filename = 'document.pdf') {
+    historyManager.clear();
     state.pdfBytes = new Uint8Array(buffer);
     state.pages = [];
     pagesViewport.innerHTML = '';
@@ -367,6 +515,7 @@ async function loadPdfBuffer(buffer, filename = 'document.pdf') {
 }
 
 function startWithBlankA4() {
+    historyManager.clear();
     state.pdfDoc = null;
     state.pdfBytes = null;
     state.pages = [];
@@ -571,13 +720,15 @@ function activateTextLine(pageData, line) {
 
     const bgCtx = bgCanvas.getContext('2d');
 
-    // 1. Mask ONLY this specific line on the background canvas (2x multiplier)
+    // 1. Snapshot original background pixels before whiteout masking
     const padX = 2;
     const padY = 1;
     const maskLeft = Math.max(0, (line.x - padX) * 2);
     const maskTop = Math.max(0, (line.y - padY) * 2);
     const maskW = (line.width + padX * 2) * 2;
     const maskH = (line.height + padY * 2) * 2;
+
+    const savedBgPixels = bgCtx.getImageData(maskLeft, maskTop, maskW, maskH);
 
     bgCtx.fillStyle = '#ffffff';
     bgCtx.fillRect(maskLeft, maskTop, maskW, maskH);
@@ -627,6 +778,32 @@ function activateTextLine(pageData, line) {
     textObj.enterEditing();
     canvas.renderAll();
 
+    // Record Action in History
+    historyManager.push({
+        pageIndex: pageData.index,
+        description: 'Edit PDF Text',
+        undo: () => {
+            bgCtx.putImageData(savedBgPixels, maskLeft, maskTop);
+            canvas.remove(textObj);
+            canvas.remove(maskRect);
+            line.isActivated = false;
+            line.fabricObject = null;
+            canvas.discardActiveObject();
+            canvas.renderAll();
+            onSelectionCleared();
+        },
+        redo: () => {
+            bgCtx.fillStyle = '#ffffff';
+            bgCtx.fillRect(maskLeft, maskTop, maskW, maskH);
+            canvas.add(maskRect);
+            canvas.add(textObj);
+            line.isActivated = true;
+            line.fabricObject = textObj;
+            canvas.setActiveObject(textObj);
+            canvas.renderAll();
+        },
+    });
+
     return textObj;
 }
 
@@ -634,10 +811,12 @@ function deleteSelectedObject() {
     const canvas = getActiveCanvas();
     if (!canvas || !state.selectedObject) return;
     const obj = state.selectedObject;
+    const pageIndex = state.activePageIndex;
 
+    let createdMask = null;
     if (obj.isOriginalText && obj.originalBBox) {
         if (!obj.maskRectRef) {
-            const mask = new window.fabric.Rect({
+            createdMask = new window.fabric.Rect({
                 left: obj.originalBBox.x,
                 top: obj.originalBBox.y,
                 width: obj.originalBBox.width,
@@ -648,13 +827,34 @@ function deleteSelectedObject() {
                 originX: 'left',
                 originY: 'top',
             });
-            canvas.add(mask);
-            canvas.sendObjectToBack(mask);
+            canvas.add(createdMask);
+            canvas.sendObjectToBack(createdMask);
         }
     }
     canvas.remove(obj);
     onSelectionCleared();
     canvas.renderAll();
+
+    historyManager.push({
+        pageIndex,
+        description: 'Delete Object',
+        undo: () => {
+            if (createdMask) canvas.remove(createdMask);
+            canvas.add(obj);
+            canvas.setActiveObject(obj);
+            canvas.renderAll();
+        },
+        redo: () => {
+            if (createdMask) {
+                canvas.add(createdMask);
+                canvas.sendObjectToBack(createdMask);
+            }
+            canvas.remove(obj);
+            canvas.discardActiveObject();
+            onSelectionCleared();
+            canvas.renderAll();
+        },
+    });
 }
 
 function appendBlankPage() {
@@ -816,6 +1016,23 @@ function bindFabricEvents(fCanvas, pageIndex) {
             textObj.enterEditing();
             textObj.selectAll();
             fCanvas.renderAll();
+
+            historyManager.push({
+                pageIndex,
+                description: 'Add Text Box',
+                undo: () => {
+                    fCanvas.remove(textObj);
+                    fCanvas.discardActiveObject();
+                    fCanvas.renderAll();
+                    onSelectionCleared();
+                },
+                redo: () => {
+                    fCanvas.add(textObj);
+                    fCanvas.setActiveObject(textObj);
+                    fCanvas.renderAll();
+                },
+            });
+
             setActiveTool('select');
             return;
         }
@@ -915,6 +1132,103 @@ function bindFabricEvents(fCanvas, pageIndex) {
     fCanvas.on('selection:created', (e) => onObjectSelected(e.selected[0]));
     fCanvas.on('selection:updated', (e) => onObjectSelected(e.selected[0]));
     fCanvas.on('selection:cleared', () => onSelectionCleared());
+
+    // History Tracking: Freehand Pen & Highlighter Drawing
+    fCanvas.on('path:created', (e) => {
+        const pathObj = e.path;
+        if (!pathObj) return;
+        historyManager.push({
+            pageIndex,
+            description: 'Draw Stroke',
+            undo: () => {
+                fCanvas.remove(pathObj);
+                fCanvas.renderAll();
+            },
+            redo: () => {
+                fCanvas.add(pathObj);
+                fCanvas.renderAll();
+            },
+        });
+    });
+
+    // History Tracking: Object Transform (Move, Scale, Rotate)
+    fCanvas.on('before:transform', (e) => {
+        const target = e.transform ? e.transform.target : null;
+        if (target && !target._historyTransformStart) {
+            target._historyTransformStart = {
+                left: target.left,
+                top: target.top,
+                scaleX: target.scaleX,
+                scaleY: target.scaleY,
+                angle: target.angle,
+            };
+        }
+    });
+
+    fCanvas.on('object:modified', (e) => {
+        const target = e.target;
+        if (!target) return;
+        const before = target._historyTransformStart;
+        const after = {
+            left: target.left,
+            top: target.top,
+            scaleX: target.scaleX,
+            scaleY: target.scaleY,
+            angle: target.angle,
+        };
+        target._historyTransformStart = null;
+
+        if (before && (Math.abs(before.left - after.left) > 0.5 || Math.abs(before.top - after.top) > 0.5 || Math.abs(before.scaleX - after.scaleX) > 0.005 || Math.abs(before.scaleY - after.scaleY) > 0.005 || Math.abs(before.angle - after.angle) > 0.5)) {
+            historyManager.push({
+                pageIndex,
+                description: 'Transform Object',
+                undo: () => {
+                    target.set(before);
+                    target.setCoords();
+                    fCanvas.setActiveObject(target);
+                    fCanvas.renderAll();
+                },
+                redo: () => {
+                    target.set(after);
+                    target.setCoords();
+                    fCanvas.setActiveObject(target);
+                    fCanvas.renderAll();
+                },
+            });
+        }
+    });
+
+    // History Tracking: Text Content Edits inside IText
+    fCanvas.on('text:editing:entered', (e) => {
+        const textObj = e.target;
+        if (textObj) {
+            textObj._historyTextBefore = textObj.text;
+        }
+    });
+
+    fCanvas.on('text:editing:exited', (e) => {
+        const textObj = e.target;
+        if (textObj && typeof textObj._historyTextBefore === 'string') {
+            const textBefore = textObj._historyTextBefore;
+            const textAfter = textObj.text;
+            textObj._historyTextBefore = null;
+
+            if (textBefore !== textAfter) {
+                historyManager.push({
+                    pageIndex,
+                    description: 'Edit Text Content',
+                    undo: () => {
+                        textObj.set('text', textBefore);
+                        fCanvas.renderAll();
+                    },
+                    redo: () => {
+                        textObj.set('text', textAfter);
+                        fCanvas.renderAll();
+                    },
+                });
+            }
+        }
+    });
 }
 
 function onObjectSelected(obj) {
@@ -1049,6 +1363,25 @@ function addText(x, y) {
     text.enterEditing();
     text.selectAll();
     canvas.renderAll();
+
+    const targetCanvas = canvas;
+    const pageIdx = state.activePageIndex;
+    historyManager.push({
+        pageIndex: pageIdx,
+        description: 'Add Text',
+        undo: () => {
+            targetCanvas.remove(text);
+            targetCanvas.discardActiveObject();
+            targetCanvas.renderAll();
+            onSelectionCleared();
+        },
+        redo: () => {
+            targetCanvas.add(text);
+            targetCanvas.setActiveObject(text);
+            targetCanvas.renderAll();
+        },
+    });
+
     setActiveTool('select');
 }
 
@@ -1129,6 +1462,24 @@ function addShape(shapeType) {
         canvas.add(shape);
         canvas.setActiveObject(shape);
         canvas.renderAll();
+
+        const targetCanvas = canvas;
+        const pageIdx = state.activePageIndex;
+        historyManager.push({
+            pageIndex: pageIdx,
+            description: `Add Shape (${shapeType})`,
+            undo: () => {
+                targetCanvas.remove(shape);
+                targetCanvas.discardActiveObject();
+                targetCanvas.renderAll();
+                onSelectionCleared();
+            },
+            redo: () => {
+                targetCanvas.add(shape);
+                targetCanvas.setActiveObject(shape);
+                targetCanvas.renderAll();
+            },
+        });
     }
     shapesMenu.classList.add('hidden');
     setActiveTool('select');
@@ -1182,6 +1533,25 @@ function insertTable(rows = 3, cols = 3) {
     canvas.add(tableGroup);
     canvas.setActiveObject(tableGroup);
     canvas.renderAll();
+
+    const targetCanvas = canvas;
+    const pageIdx = state.activePageIndex;
+    historyManager.push({
+        pageIndex: pageIdx,
+        description: 'Insert Table',
+        undo: () => {
+            targetCanvas.remove(tableGroup);
+            targetCanvas.discardActiveObject();
+            targetCanvas.renderAll();
+            onSelectionCleared();
+        },
+        redo: () => {
+            targetCanvas.add(tableGroup);
+            targetCanvas.setActiveObject(tableGroup);
+            targetCanvas.renderAll();
+        },
+    });
+
     setActiveTool('select');
 }
 
@@ -1212,6 +1582,25 @@ function handleImageUpload(file) {
             canvas.add(fabricImg);
             canvas.setActiveObject(fabricImg);
             canvas.renderAll();
+
+            const targetCanvas = canvas;
+            const pageIdx = state.activePageIndex;
+            historyManager.push({
+                pageIndex: pageIdx,
+                description: 'Insert Image',
+                undo: () => {
+                    targetCanvas.remove(fabricImg);
+                    targetCanvas.discardActiveObject();
+                    targetCanvas.renderAll();
+                    onSelectionCleared();
+                },
+                redo: () => {
+                    targetCanvas.add(fabricImg);
+                    targetCanvas.setActiveObject(fabricImg);
+                    targetCanvas.renderAll();
+                },
+            });
+
             setActiveTool('select');
         };
         imgEl.src = e.target.result;
@@ -1307,6 +1696,24 @@ async function confirmAndPlaceSignature() {
     canvas.add(fabricImg);
     canvas.setActiveObject(fabricImg);
     canvas.renderAll();
+
+    const targetCanvas = canvas;
+    const targetPageIdx = pageIndex;
+    historyManager.push({
+        pageIndex: targetPageIdx,
+        description: 'Insert Signature',
+        undo: () => {
+            targetCanvas.remove(fabricImg);
+            targetCanvas.discardActiveObject();
+            targetCanvas.renderAll();
+            onSelectionCleared();
+        },
+        redo: () => {
+            targetCanvas.add(fabricImg);
+            targetCanvas.setActiveObject(fabricImg);
+            targetCanvas.renderAll();
+        },
+    });
 
     state.signPlacement = null;
     closeSignatureModal();
@@ -1644,9 +2051,38 @@ function initApp() {
 
     propDelete.addEventListener('click', deleteSelectedObject);
 
-    // Delete key shortcut
+    // History Undo / Redo Click listeners
+    btnUndo?.addEventListener('click', () => historyManager.undo());
+    btnRedo?.addEventListener('click', () => historyManager.redo());
+
+    // Global Keyboard Shortcuts (Delete, Backspace, Undo Cmd/Ctrl+Z, Redo Cmd+Shift+Z / Ctrl+Y)
     window.addEventListener('keydown', (e) => {
-        if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedObject && !state.selectedObject.isEditing) {
+        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+        const isEditingInput = activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select';
+
+        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+        const isMod = isMac ? e.metaKey : e.ctrlKey;
+
+        // Undo: Cmd+Z (Mac) or Ctrl+Z (Win/Linux)
+        if (isMod && (e.key === 'z' || e.key === 'Z') && !isEditingInput) {
+            e.preventDefault();
+            if (e.shiftKey) {
+                historyManager.redo();
+            } else {
+                historyManager.undo();
+            }
+            return;
+        }
+
+        // Redo: Cmd+Shift+Z or Ctrl+Y
+        if (((isMod && e.shiftKey && (e.key === 'z' || e.key === 'Z')) || (isMod && (e.key === 'y' || e.key === 'Y'))) && !isEditingInput) {
+            e.preventDefault();
+            historyManager.redo();
+            return;
+        }
+
+        // Delete key shortcut
+        if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedObject && !state.selectedObject.isEditing && !isEditingInput) {
             deleteSelectedObject();
         }
     });

@@ -8,13 +8,13 @@ This document tracks all features, capabilities, and ongoing implementations for
 
 | Category | Total Features | Completed | In Progress | Pending |
 | :--- | :---: | :---: | :---: | :---: |
-| **Interactive PDF Editor (Core)** | 10 | 8 | 2 | 0 |
+| **Interactive PDF Editor (Core)** | 11 | 9 | 2 | 0 |
 | **Document Organization & Pages** | 5 | 3 | 1 | 1 |
 | **Security & Privacy** | 4 | 0 | 0 | 4 |
 | **Conversions (To PDF)** | 5 | 1 | 0 | 4 |
 | **Conversions (From PDF)** | 6 | 0 | 0 | 6 |
 | **Enhancement, OCR & AI Tools** | 6 | 0 | 0 | 6 |
-| **Total** | **36** | **12** | **3** | **21** |
+| **Total** | **37** | **13** | **3** | **21** |
 
 ---
 
@@ -34,6 +34,7 @@ The standalone, full-featured web-based canvas PDF editor powered by **PDF.js** 
 | **Table & Grid Generator** | Modal to configure rows/columns and insert structured editable table cells | `[Completed]` | Fabric.js grouped cell rects & text inputs |
 | **Image Insertion** | Upload and place PNG, JPG, WebP images with free transform & scaling | `[Completed]` | Fabric.js `FabricImage.fromURL` |
 | **Typography & Styling** | 45+ categorized fonts (Popular Sans, Modern Sans, Classic Serif, Monospace, Cursive), font size, bold, italic, underline, fill, stroke | `[Completed]` | Dynamic context property toolbar with categorized font selector |
+| **Undo & Redo Engine** | Full multi-page history management with pointer-based branch replacement, instant rollback, and keyboard shortcuts (`Cmd+Z`, `Cmd+Shift+Z` / `Ctrl+Y`) | `[Completed]` | Doubly Linked List Action-Command Pattern with background pixel snapshotting |
 
 ---
 
