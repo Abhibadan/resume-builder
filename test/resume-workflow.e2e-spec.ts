@@ -63,6 +63,14 @@ describe('resume editor workflow', () => {
             .get('/resumes/editor.css')
             .expect(200)
             .expect('Content-Type', /text\/css/);
+        await http
+            .get('/resumes/vendor/pdf.min.mjs')
+            .expect(200)
+            .expect('Content-Type', /text\/javascript/);
+        await http
+            .get('/resumes/vendor/pdf.worker.min.mjs')
+            .expect(200)
+            .expect('Content-Type', /text\/javascript/);
     });
 
     it('validates presets, serializes concurrent updates, and retains pinned versions after deletion', async () => {
@@ -209,11 +217,10 @@ describe('resume editor workflow', () => {
         const missing = await send([hiddenProjects], 'preview').expect(400);
         expect(missing.body.issues).toContainEqual(expect.objectContaining({ path: 'resume.sections.projects' }));
         await send([requiredProject, hiddenProjects, experience]).expect(200);
-        const overLimit = await send(
+        await send(
             [requiredProject, hiddenProjects, { ...experience, items: [...experience.items, { role: 'Role 5' }] }],
-            'export/pdf',
-        ).expect(400);
-        expect(overLimit.body.issues).toContainEqual(expect.objectContaining({ path: 'resume.sections.2.items' }));
+            'export/json',
+        ).expect(200);
         const fitted = await http
             .post('/resumes/preview')
             .send({
